@@ -32,14 +32,26 @@ ANGLES = {
             "Ce qu'on vient d'apprendre sur GTA 6 change pas mal de choses.",
             "GTA 6 cache peut-être une info importante en plein milieu de ce qu'on croit déjà savoir.",
         ],
-        "premise": "Ce point pourrait être bien plus important qu'on ne le pensait pour le jeu.",
+        "premise": [
+            "Ce point pourrait être bien plus important qu'on ne le pensait pour le jeu.",
+            "Ce détail pourrait changer la façon dont on aborde une bonne partie de l'aventure.",
+        ],
         "context": "Depuis les premières infos, on avait tous une image assez précise en tête.",
-        "twist": "Mais ce qui vient de circuler ne colle pas exactement avec ce qu'on imaginait.",
-        "stakes": "Si c'est vrai, ça veut dire que Rockstar a fait des choix qu'on n'avait pas vus venir.",
+        "twist": [
+            "Mais ce qui vient de circuler ne colle pas exactement avec ce qu'on imaginait.",
+            "Sauf que la réalité pourrait être assez éloignée de ce qu'on tenait pour acquis.",
+        ],
+        "stakes": [
+            "Si c'est vrai, ça veut dire que Rockstar a fait des choix qu'on n'avait pas vus venir.",
+            "Et derrière ça, il y a une vraie question de vision pour le jeu final.",
+        ],
         "nuance": "Cela dit, un leak reste un leak : rien n'est confirmé officiellement.",
         "measured": "Ce genre de détail peut changer des séquences entières, ou juste rester anecdotique.",
         "caveat": "Donc ne t'emballe pas trop vite tant que Rockstar n'a rien dit.",
-        "rhetorical": "Mais si ça se confirme, pourquoi est-ce que Rockstar n'en a pas parlé plus tôt ?",
+        "rhetorical": [
+            "Mais si ça se confirme, pourquoi est-ce que Rockstar n'en a pas parlé plus tôt ?",
+            "Alors : indice volontaire, ou fuite que Rockstar aurait préféré éviter ?",
+        ],
         "hashtags": ["#GTA6", "#GTA6News", "#Leak", "#RockstarGames", "#FYP"],
     },
     "compte_a_rebours": {
@@ -49,14 +61,26 @@ ANGLES = {
             "GTA 6 sort le 19 novembre, et ce qu'on apprend n'aide pas à patienter.",
             "À {jours} jours de GTA 6, voilà le détail dont tout le monde devrait parler.",
         ],
-        "premise": "Ça pourrait être l'élément qui décide si tu précommandes maintenant ou pas.",
+        "premise": [
+            "Ça pourrait être l'élément qui décide si tu précommandes maintenant ou pas.",
+            "Ce détail pèse plus lourd qu'il n'en a l'air à quelques semaines de la sortie.",
+        ],
         "context": "On sait déjà que le jeu sort le 19 novembre 2026 sur PS5 et Xbox Series.",
-        "twist": "Mais plus la date approche, plus certains détails changent la donne.",
-        "stakes": "À ce stade du développement, chaque info compte : il n'y aura plus de gros changement.",
+        "twist": [
+            "Mais plus la date approche, plus certains détails changent la donne.",
+            "Et à ce stade, ce genre d'info n'est plus un simple bruit de couloir.",
+        ],
+        "stakes": [
+            "À ce stade du développement, chaque info compte : il n'y aura plus de gros changement.",
+            "Ce qui est montré maintenant est probablement très proche du jeu final.",
+        ],
         "nuance": "Après, Rockstar garde clairement des choses sous le coude pour la sortie.",
         "measured": "Ça peut être un vrai game changer, comme un point de détail gonflé par la hype.",
         "caveat": "Donc reste prudent sur les attentes, on a déjà vu la communauté sur-interpréter.",
-        "rhetorical": "La vraie question : est-ce que ça vaut le coup de précommander day one pour ça ?",
+        "rhetorical": [
+            "La vraie question : est-ce que ça vaut le coup de précommander day one pour ça ?",
+            "Du coup : tu sécurises ta copie maintenant, ou tu attends d'en savoir plus ?",
+        ],
         "hashtags": ["#GTA6", "#GTA6News", "#19Novembre", "#RockstarGames", "#FYP"],
     },
     "comparaison": {
@@ -66,14 +90,26 @@ ANGLES = {
             "13 ans séparent GTA 5 de GTA 6, et ça se voit ici plus que partout ailleurs.",
             "GTA 5 vs GTA 6 sur ce point : ce n'est même plus la même licence.",
         ],
-        "premise": "Ce seul élément résume le saut de génération entre GTA 5 et GTA 6.",
+        "premise": [
+            "Ce seul élément résume le saut de génération entre GTA 5 et GTA 6.",
+            "C'est peut-être le meilleur exemple de tout ce qui a changé en 13 ans.",
+        ],
         "context": "En 2013, on trouvait déjà GTA 5 impressionnant pour l'époque.",
-        "twist": "Mais quand tu mets les deux face à face aujourd'hui, GTA 5 prend un sacré coup de vieux.",
-        "stakes": "Ça montre que Rockstar n'a pas juste amélioré le jeu, il a changé d'échelle.",
+        "twist": [
+            "Mais quand tu mets les deux face à face aujourd'hui, GTA 5 prend un sacré coup de vieux.",
+            "Sauf qu'à côté de GTA 6, ce qui semblait fou en 2013 paraît presque daté.",
+        ],
+        "stakes": [
+            "Ça montre que Rockstar n'a pas juste amélioré le jeu, il a changé d'échelle.",
+            "Ce n'est plus une suite, c'est un autre standard pour le genre entier.",
+        ],
         "nuance": "Attention quand même : GTA 5 reste une référence, et la nostalgie joue beaucoup.",
         "measured": "Sur le papier c'est le jour et la nuit, mais il faudra voir manette en main.",
         "caveat": "Et un trailer léché ne dit jamais tout d'un jeu final.",
-        "rhetorical": "Du coup, est-ce que GTA 5 va vraiment devenir injouable après GTA 6 ?",
+        "rhetorical": [
+            "Du coup, est-ce que GTA 5 va vraiment devenir injouable après GTA 6 ?",
+            "La question : est-ce qu'on retournera un jour sur GTA 5 après avoir goûté à GTA 6 ?",
+        ],
         "hashtags": ["#GTA6", "#GTA5", "#GTA6News", "#RockstarGames", "#Gaming"],
     },
     "personnages": {
@@ -83,14 +119,26 @@ ANGLES = {
             "Et si Lucia et Jason étaient moins importants qu'on ne le croyait ?",
             "Premier duo jouable de l'histoire de GTA, et un vrai doute vient de s'installer.",
         ],
-        "premise": "La relation entre Jason et Lucia pourrait être beaucoup moins centrale qu'on l'imaginait.",
+        "premise": [
+            "La relation entre Jason et Lucia pourrait être beaucoup moins centrale qu'on l'imaginait.",
+            "Le lien entre les deux personnages pourrait n'être qu'un élément secondaire du scénario.",
+        ],
         "context": "Depuis le premier trailer, Rockstar nous les montre pourtant comme un vrai couple : complices, prêts à tout l'un pour l'autre.",
-        "twist": "Mais le plus surprenant, c'est que leur romance pourrait rester totalement optionnelle.",
-        "stakes": "Rockstar avait une occasion énorme de construire une histoire d'amour profonde, avec des choix capables de changer l'aventure.",
+        "twist": [
+            "Mais le plus surprenant, c'est que leur romance pourrait rester totalement optionnelle.",
+            "Sauf que tu pourrais très bien traverser toute l'aventure sans faire évoluer leur relation.",
+        ],
+        "stakes": [
+            "Rockstar avait une occasion énorme de construire une histoire d'amour profonde, avec des choix capables de changer l'aventure.",
+            "Il y avait matière à faire une vraie histoire de couple, avec des conséquences fortes sur le récit.",
+        ],
         "nuance": "Apparemment, ce ne sera pas aussi extrême que ça.",
         "measured": "Ton niveau de relation pourrait modifier des dialogues et quelques scènes, sans donner deux jeux complètement différents.",
         "caveat": "Donc ne t'attends probablement pas à un système de relation ultra poussé.",
-        "rhetorical": "Jason et Lucia sont censés être au cœur de l'histoire, alors pourquoi laisser le joueur mettre leur relation de côté ?",
+        "rhetorical": [
+            "Jason et Lucia sont censés être au cœur de l'histoire, alors pourquoi laisser le joueur mettre leur relation de côté ?",
+            "Si ce duo est le cœur du jeu, pourquoi rendre leur lien complètement facultatif ?",
+        ],
         "hashtags": ["#GTA6", "#Lucia", "#Jason", "#GTA6News", "#FYP"],
     },
     "carte": {
@@ -100,14 +148,26 @@ ANGLES = {
             "On a de nouvelles infos sur Leonida, et ça donne le vertige.",
             "Vice City n'a jamais été aussi grande, et un détail vient de le confirmer.",
         ],
-        "premise": "Leonida serait bien plus dense qu'une simple carte agrandie.",
+        "premise": [
+            "Leonida serait bien plus dense qu'une simple carte agrandie.",
+            "Ce n'est pas juste la taille de la carte qui impressionne, c'est sa richesse.",
+        ],
         "context": "On savait déjà que l'État de Leonida serait environ deux fois plus grand que Los Santos.",
-        "twist": "Mais la taille n'est pas vraiment le sujet : c'est ce qu'il y a dedans qui change tout.",
-        "stakes": "Une grande carte vide, on connaît. Une carte grande ET vivante, c'est une autre histoire.",
+        "twist": [
+            "Mais la taille n'est pas vraiment le sujet : c'est ce qu'il y a dedans qui change tout.",
+            "Sauf que le vrai défi, ce n'est pas de faire grand, c'est de faire vivant.",
+        ],
+        "stakes": [
+            "Une grande carte vide, on connaît. Une carte grande ET vivante, c'est une autre histoire.",
+            "C'est là que se joue la différence entre un beau décor et un monde où tu as envie de rester.",
+        ],
         "nuance": "Cela dit, Rockstar en promet beaucoup, il faudra voir la densité réelle à la sortie.",
         "measured": "Ça peut être le monde ouvert le plus détaillé jamais fait, ou une carte inégale.",
         "caveat": "Un trailer montre toujours les meilleurs endroits, jamais les zones de transition.",
-        "rhetorical": "La vraie question : est-ce qu'on aura envie d'explorer, ou juste de suivre le GPS ?",
+        "rhetorical": [
+            "La vraie question : est-ce qu'on aura envie d'explorer, ou juste de suivre le GPS ?",
+            "Est-ce que cette carte va nous donner envie de nous perdre dedans, vraiment ?",
+        ],
         "hashtags": ["#GTA6", "#Leonida", "#ViceCity", "#GTA6Map", "#FYP"],
     },
     "prix": {
@@ -117,14 +177,26 @@ ANGLES = {
             "Est-ce que ça vaut vraiment le prix de GTA 6 ? La réponse n'est pas si simple.",
             "Avant de précommander GTA 6, il y a une chose qu'il faut regarder de près.",
         ],
-        "premise": "Ce détail pourrait justifier, ou pas, de mettre 80 à 100 dollars day one.",
+        "premise": [
+            "Ce détail pourrait justifier, ou pas, de mettre 80 à 100 dollars day one.",
+            "C'est peut-être ce qui fait pencher la balance entre précommander et attendre.",
+        ],
         "context": "On connaît déjà les tarifs : Édition Standard autour de 80 dollars, Édition Ultime autour de 100.",
-        "twist": "Mais le prix seul ne veut rien dire tant qu'on ne sait pas ce qu'il y a vraiment dans la boîte.",
-        "stakes": "À ce tarif, la moindre déception se paie cher, surtout sur l'édition la plus chère.",
+        "twist": [
+            "Mais le prix seul ne veut rien dire tant qu'on ne sait pas ce qu'il y a vraiment dans la boîte.",
+            "Sauf qu'un tarif élevé n'est un problème que si le contenu ne suit pas.",
+        ],
+        "stakes": [
+            "À ce tarif, la moindre déception se paie cher, surtout sur l'édition la plus chère.",
+            "Payer plein pot à l'aveugle, c'est prendre un vrai risque à ce niveau de prix.",
+        ],
         "nuance": "En face, si le contenu est là, ça reste rentable vu le temps de jeu attendu.",
         "measured": "Le bonus de précommande, le Vintage Vice City Pack, est sympa mais ne devrait pas décider à ta place.",
         "caveat": "Et rappelle-toi qu'attendre quelques semaines te donne les vrais avis des joueurs.",
-        "rhetorical": "Donc : tu précommandes maintenant, ou tu attends les tests pour être sûr ?",
+        "rhetorical": [
+            "Donc : tu précommandes maintenant, ou tu attends les tests pour être sûr ?",
+            "La vraie question : est-ce que tu fais confiance à Rockstar les yeux fermés à ce prix ?",
+        ],
         "hashtags": ["#GTA6", "#Precommande", "#GTA6News", "#RockstarGames", "#FYP"],
     },
     "reaction_trailer": {
@@ -134,14 +206,26 @@ ANGLES = {
             "Ce passage vient de sortir, et un détail mérite beaucoup plus d'attention.",
             "Trois visionnages plus tard, voilà ce qui me reste en tête.",
         ],
-        "premise": "Il y a là un détail qui en dit plus sur le jeu que la plupart des grosses annonces.",
+        "premise": [
+            "Il y a là un détail qui en dit plus sur le jeu que la plupart des grosses annonces.",
+            "Ce petit passage cache une info plus parlante que tout le reste de la vidéo.",
+        ],
         "context": "Rockstar glisse toujours des indices dans ses trailers, ça a toujours été comme ça.",
-        "twist": "Et cette fois, le détail intéressant n'est pas celui que tout le monde a partagé.",
-        "stakes": "Si je ne me trompe pas, ça donne une piste sérieuse sur le ton et le contenu du jeu.",
+        "twist": [
+            "Et cette fois, le détail intéressant n'est pas celui que tout le monde a partagé.",
+            "Sauf que tout le monde a regardé au mauvais endroit de l'image.",
+        ],
+        "stakes": [
+            "Si je ne me trompe pas, ça donne une piste sérieuse sur le ton et le contenu du jeu.",
+            "Ça pourrait dire beaucoup sur la direction que Rockstar a choisie pour ce GTA.",
+        ],
         "nuance": "Après, on est tous en train de sur-analyser trois secondes de vidéo, faut le reconnaître.",
         "measured": "Ça peut être un vrai indice volontaire, comme un simple élément de décor sans importance.",
         "caveat": "Rockstar sait très bien qu'on décortique tout, donc méfiance sur les fausses pistes.",
-        "rhetorical": "Mais si c'est intentionnel, qu'est-ce que Rockstar essaie de nous dire exactement ?",
+        "rhetorical": [
+            "Mais si c'est intentionnel, qu'est-ce que Rockstar essaie de nous dire exactement ?",
+            "Alors : easter egg volontaire, ou on se raconte des histoires tout seuls ?",
+        ],
         "hashtags": ["#GTA6", "#GTA6Trailer", "#GTA6News", "#RockstarGames", "#FYP"],
     },
 }
@@ -225,22 +309,26 @@ def generate_template_variant(topic, angle_key, tone, news_summary=None, days_le
 
     hook = rng.choice(angle["hooks"]).format(jours=jours)
 
+    def slot(key):
+        val = angle[key]
+        return rng.choice(val) if isinstance(val, list) else val
+
     body = [
         rng.choice(TONE_INTRO.get(tone, TONE_INTRO["choc"])),
         f"Le sujet du jour : {sujet}.",
-        angle["premise"],
-        angle["context"],
-        angle["twist"],
+        slot("premise"),
+        slot("context"),
+        slot("twist"),
     ]
     if detail:
         body.append(f"{rng.choice(DETAIL_INTROS)} {detail}.")
     body += [
         rng.choice(REACTIONS),
-        angle["stakes"],
-        angle["nuance"],
-        angle["measured"],
-        angle["caveat"],
-        angle["rhetorical"],
+        slot("stakes"),
+        slot("nuance"),
+        slot("measured"),
+        slot("caveat"),
+        slot("rhetorical"),
         rng.choice(BOTH_SIDES),
     ]
 
