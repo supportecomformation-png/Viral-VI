@@ -7,12 +7,7 @@
     <p>J-{{ days_left }} avant la sortie de GTA 6. Génère ton prochain script.</p>
   </div>
   <div class="credits-pill" id="credits-pill">
-    {% if current_user.plan == 'pro' %}
-      <span class="badge-pro">PRO</span> Scripts illimités
-    {% else %}
-      <strong id="credits-remaining">{{ current_user.credits_remaining }}</strong> scripts gratuits restants
-      · <a href="{{ url_for('billing.pricing') }}">Passer Pro</a>
-    {% endif %}
+    <span class="badge-pro">PRO</span> Scripts illimités
   </div>
 </section>
 

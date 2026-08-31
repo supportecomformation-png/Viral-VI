@@ -1,48 +1,37 @@
 {% extends "base.html" %}
-{% block title %}Tarifs — ViralVI{% endblock %}
+{% block title %}Tarif — ViralVI{% endblock %}
 {% block content %}
 <section class="container page-header">
-  <h1>Tarifs</h1>
-  <p>Commence gratuitement, passe Pro quand tu publies tous les jours.</p>
+  <h1>Tarif</h1>
+  <p>Un seul abonnement, tout inclus. Scripts illimités sur l'actu GTA 6.</p>
   {% if not stripe_configured %}
-    <p class="badge-demo">Mode démo actif : Stripe n'est pas encore configuré, le bouton "Passer Pro" active le plan Pro directement pour te laisser tester.</p>
+    <p class="badge-demo">Mode démo actif : Stripe n'est pas encore configuré, le bouton « M'abonner » active l'abonnement directement pour te laisser tester.</p>
   {% endif %}
 </section>
 
-<section class="container pricing-grid">
-  <div class="price-card">
-    <h2>Free</h2>
-    <p class="price-value">0€<span>/mois</span></p>
-    <ul class="price-features">
-      <li>5 scripts par mois</li>
-      <li>Score de viralité complet</li>
-      <li>Accès au fil d'actus GTA 6</li>
-      <li>3 variantes par génération</li>
-    </ul>
-    {% if current_user %}
-      <a href="{{ url_for('dashboard.home') }}" class="btn btn-ghost btn-block">Continuer avec Free</a>
-    {% else %}
-      <a href="{{ url_for('auth.signup') }}" class="btn btn-ghost btn-block">Commencer gratuitement</a>
-    {% endif %}
-  </div>
-
+<section class="container pricing-grid pricing-grid--single">
   <div class="price-card price-card--highlight">
-    <span class="price-badge">Le plus populaire</span>
-    <h2>Pro</h2>
+    <h2>ViralVI Pro</h2>
     <p class="price-value">{{ price }}€<span>/mois</span></p>
     <ul class="price-features">
       <li>Scripts illimités</li>
-      <li>Score de viralité complet + conseils</li>
-      <li>Mode IA (avec ta propre clé API)</li>
-      <li>Historique complet des scripts</li>
+      <li>3 variantes classées par score de viralité</li>
+      <li>Score de viralité complet + conseils d'amélioration</li>
+      <li>Fil d'actualités GTA 6 mis à jour chaque jour</li>
+      <li>Mode IA (avec ta propre clé API Anthropic)</li>
+      <li>Historique complet de tes scripts</li>
       <li>Support prioritaire</li>
     </ul>
-    {% if current_user %}
-      <form method="post" action="{{ url_for('billing.upgrade') }}">
-        <button type="submit" class="btn btn-primary btn-block">Passer Pro</button>
-      </form>
+    {% if not current_user %}
+      <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-block">Créer un compte</a>
+      <p class="price-note">Déjà inscrit ? <a href="{{ url_for('auth.login') }}">Connecte-toi</a></p>
+    {% elif current_user.plan == 'pro' %}
+      <a href="{{ url_for('dashboard.home') }}" class="btn btn-primary btn-block">Ouvrir le générateur</a>
+      <p class="price-note">Ton abonnement est actif ✓</p>
     {% else %}
-      <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-block">Créer un compte pour passer Pro</a>
+      <form method="post" action="{{ url_for('billing.upgrade') }}">
+        <button type="submit" class="btn btn-primary btn-block">M'abonner</button>
+      </form>
     {% endif %}
   </div>
 </section>

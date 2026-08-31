@@ -19,11 +19,14 @@ def pricing():
 @bp.route("/upgrade", methods=["POST"])
 @login_required
 def upgrade():
+    if g.user["plan"] == "pro":
+        return redirect(url_for("dashboard.home"))
+
     if not is_configured(current_app.config):
-        # Mode démo : pas de vraie facturation configurée -> on active Pro
-        # directement pour permettre de tester tout le parcours produit.
+        # Mode démo : pas de vraie facturation configurée -> on active
+        # l'abonnement directement pour tester tout le parcours produit.
         execute("UPDATE users SET plan = 'pro' WHERE id = ?", (g.user["id"],))
-        flash("Mode démo : compte passé en Pro (aucun paiement réel, configure Stripe pour la prod).", "success")
+        flash("Mode démo : abonnement activé (aucun paiement réel — configure Stripe pour la prod).", "success")
         return redirect(url_for("dashboard.home"))
 
     success_url = url_for("billing.success", _external=True)
@@ -81,7 +84,7 @@ def webhook():
         customer_id = data_object.get("customer")
         if customer_id:
             execute(
-                "UPDATE users SET plan = 'free' WHERE stripe_customer_id = ?",
+                "UPDATE users SET plan = 'inactive' WHERE stripe_customer_id = ?",
                 (customer_id,),
             )
 

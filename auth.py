@@ -36,8 +36,8 @@ def signup():
             session.clear()
             session["user_id"] = user_id
             session.permanent = True
-            flash("Compte créé, bienvenue sur ViralVI !", "success")
-            return redirect(url_for("dashboard.home"))
+            flash("Compte créé ! Choisis ton abonnement pour accéder au générateur.", "success")
+            return redirect(url_for("billing.pricing"))
 
         flash(error, "error")
 
@@ -62,7 +62,9 @@ def login():
             session.clear()
             session["user_id"] = user["id"]
             session.permanent = True
-            return redirect(url_for("dashboard.home"))
+            if user["plan"] == "pro":
+                return redirect(url_for("dashboard.home"))
+            return redirect(url_for("billing.pricing"))
 
         flash(error, "error")
 

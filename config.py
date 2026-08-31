@@ -41,8 +41,7 @@ class Config:
 
     PERMANENT_SESSION_LIFETIME = timedelta(days=30)
 
-    # Plans
-    FREE_PLAN_MONTHLY_CREDITS = 5
+    # Abonnement unique (payant)
     PRO_PLAN_PRICE_EUR = 19
 
     # Stripe (optionnel — l'app tourne en "mode démo" si absent)

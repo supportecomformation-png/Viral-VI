@@ -35,6 +35,7 @@ def create_app(config_class=Config):
             "current_user": g.get("user"),
             "days_left": days_left,
             "current_year": date.today().year,
+            "pro_price": app.config["PRO_PLAN_PRICE_EUR"],
         }
 
     @app.route("/")

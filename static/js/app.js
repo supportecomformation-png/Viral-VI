@@ -15,7 +15,6 @@
   const resultsEmpty = $("#results-empty");
   const resultsList = $("#results-list");
   const variantTemplate = $("#variant-template");
-  const creditsRemainingEl = $("#credits-remaining");
 
   let selectedNewsId = null;
 
@@ -203,6 +202,9 @@
         if (!resp.ok) {
           generateError.textContent = data.message || "Une erreur est survenue.";
           generateError.style.display = "block";
+          if (resp.status === 402) {
+            setTimeout(() => (window.location.href = "/billing/pricing"), 1500);
+          }
           return;
         }
 
@@ -215,10 +217,6 @@
         if (data.ai_error) {
           generateError.textContent = "Mode IA indisponible (" + data.ai_error + "), scripts générés en mode standard à la place.";
           generateError.style.display = "block";
-        }
-
-        if (creditsRemainingEl && data.credits_remaining !== null && data.credits_remaining !== undefined) {
-          creditsRemainingEl.textContent = data.credits_remaining;
         }
       } catch (e) {
         generateError.textContent = "Erreur réseau, réessaie dans un instant.";

@@ -10,10 +10,10 @@
       Une nouvelle sélection d'actualités chaque jour, pour ne jamais manquer d'idées.
     </p>
     <div class="hero-actions">
-      <a href="{{ url_for('auth.signup') }}" class="btn btn-primary">Essayer gratuitement</a>
+      <a href="{{ url_for('auth.signup') }}" class="btn btn-primary">Créer mon compte</a>
       <a href="{{ url_for('news.feed') }}" class="btn btn-ghost">Voir les actus du jour</a>
     </div>
-    <p class="hero-note">5 scripts gratuits par mois · sans carte bancaire</p>
+    <p class="hero-note">Abonnement {{ pro_price }}€/mois · scripts illimités · sans engagement</p>
   </div>
 
   <div class="hero-visual" aria-hidden="true">
@@ -72,6 +72,6 @@
 
 <section class="container cta-band">
   <h2>Prêt à publier ta prochaine vidéo virale sur GTA 6 ?</h2>
-  <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-lg">Créer mon compte gratuit</a>
+  <a href="{{ url_for('billing.pricing') }}" class="btn btn-primary btn-lg">Voir le tarif</a>
 </section>
 {% endblock %}

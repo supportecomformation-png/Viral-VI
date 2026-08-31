@@ -6,8 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     display_name TEXT NOT NULL,
-    plan TEXT NOT NULL DEFAULT 'free',            -- 'free' | 'pro'
-    credits_remaining INTEGER NOT NULL DEFAULT 5, -- scripts restants ce mois-ci (free)
+    plan TEXT NOT NULL DEFAULT 'inactive',        -- 'inactive' | 'pro' (abonnement actif)
     stripe_customer_id TEXT,
     stripe_subscription_id TEXT,
     is_admin INTEGER NOT NULL DEFAULT 0,

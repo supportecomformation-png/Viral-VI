@@ -1,6 +1,6 @@
 from functools import wraps
 
-from flask import session, redirect, url_for, flash, g
+from flask import session, redirect, url_for, flash, g, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from db import query_one
@@ -28,5 +28,30 @@ def login_required(view):
         if g.get("user") is None:
             flash("Connecte-toi pour accéder à cette page.", "error")
             return redirect(url_for("auth.login"))
+        return view(*args, **kwargs)
+    return wrapped_view
+
+
+def is_subscribed(user):
+    return bool(user) and user["plan"] == "pro"
+
+
+def subscription_required(view):
+    """Réserve la vue aux comptes avec un abonnement actif (`plan == 'pro'`)."""
+    @wraps(view)
+    def wrapped_view(*args, **kwargs):
+        user = g.get("user")
+        if user is None:
+            if request.is_json:
+                return jsonify({"error": "auth_required",
+                                "message": "Connecte-toi pour continuer."}), 401
+            flash("Connecte-toi pour accéder à cette page.", "error")
+            return redirect(url_for("auth.login"))
+        if not is_subscribed(user):
+            if request.is_json:
+                return jsonify({"error": "subscription_required",
+                                "message": "Un abonnement actif est nécessaire pour générer des scripts."}), 402
+            flash("Un abonnement actif est nécessaire pour accéder au générateur.", "error")
+            return redirect(url_for("billing.pricing"))
         return view(*args, **kwargs)
     return wrapped_view

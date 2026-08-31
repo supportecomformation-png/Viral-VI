@@ -2,7 +2,7 @@ import json
 
 from flask import Blueprint, render_template, request, jsonify, g, current_app
 
-from auth_utils import login_required
+from auth_utils import subscription_required
 from db import query_all, query_one, execute
 from engine.generator import generate_script_variants, build_variant_from_ai_text
 from engine.ai_client import generate_with_ai
@@ -43,7 +43,7 @@ def _days_until_release():
 
 
 @bp.route("/")
-@login_required
+@subscription_required
 def home():
     news = query_all("SELECT * FROM news_items ORDER BY published_at DESC, id DESC LIMIT 12")
     history = query_all(
@@ -61,15 +61,8 @@ def home():
 
 
 @bp.route("/generate", methods=["POST"])
-@login_required
+@subscription_required
 def generate():
-    user = g.user
-    if user["plan"] != "pro" and user["credits_remaining"] <= 0:
-        return jsonify({
-            "error": "no_credits",
-            "message": "Tu as utilisé tous tes scripts gratuits ce mois-ci. Passe Pro pour continuer.",
-        }), 402
-
     payload = request.get_json(force=True, silent=True) or {}
     topic = (payload.get("topic") or "").strip()
     tone = payload.get("tone") or "choc"
@@ -112,25 +105,16 @@ def generate():
             news_tags=news_tags, days_left=_days_until_release(), n_variants=3,
         )
 
-    if user["plan"] != "pro":
-        execute(
-            "UPDATE users SET credits_remaining = credits_remaining - 1 WHERE id = ?",
-            (user["id"],),
-        )
-
     return jsonify({
         "variants": variants,
         "topic": topic,
         "news_id": news_row["id"] if news_row else None,
         "ai_error": ai_error,
-        "credits_remaining": (
-            None if user["plan"] == "pro" else max(0, user["credits_remaining"] - 1)
-        ),
     })
 
 
 @bp.route("/scripts/save", methods=["POST"])
-@login_required
+@subscription_required
 def save_script():
     payload = request.get_json(force=True, silent=True) or {}
     variant = payload.get("variant") or {}
@@ -164,7 +148,7 @@ def save_script():
 
 
 @bp.route("/scripts/<int:script_id>/delete", methods=["POST"])
-@login_required
+@subscription_required
 def delete_script(script_id):
     execute("DELETE FROM scripts WHERE id = ? AND user_id = ?", (script_id, g.user["id"]))
     return jsonify({"ok": True})

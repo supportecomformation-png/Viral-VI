@@ -24,11 +24,15 @@
         <a href="{{ url_for('news.feed') }}">Actus GTA 6</a>
         <a href="{{ url_for('billing.pricing') }}">Tarifs</a>
         {% if current_user %}
-          <a href="{{ url_for('dashboard.home') }}" class="nav-cta">Mon générateur</a>
+          {% if current_user.plan == 'pro' %}
+            <a href="{{ url_for('dashboard.home') }}" class="nav-cta">Mon générateur</a>
+          {% else %}
+            <a href="{{ url_for('billing.pricing') }}" class="nav-cta">M'abonner</a>
+          {% endif %}
           <a href="{{ url_for('auth.logout') }}" class="nav-link-muted">Déconnexion</a>
         {% else %}
           <a href="{{ url_for('auth.login') }}">Connexion</a>
-          <a href="{{ url_for('auth.signup') }}" class="nav-cta">Essayer gratuitement</a>
+          <a href="{{ url_for('auth.signup') }}" class="nav-cta">S'inscrire</a>
         {% endif %}
       </nav>
     </div>
