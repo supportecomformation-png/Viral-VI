@@ -418,6 +418,7 @@ a:hover { color: var(--cyan); }
 .switch input:checked + .slider { background: rgba(255, 46, 146, 0.3); border-color: var(--pink); }
 .switch input:checked + .slider::before { transform: translateX(18px); background: var(--pink-soft); }
 .ai-key-note { font-size: 0.78rem; color: var(--text-faint); margin-top: 4px; }
+#generate-btn { margin-top: 18px; }
 
 /* ---------- Results / variant cards ---------- */
 .results-empty { color: var(--text-faint); padding: 30px 0; text-align: center; }
