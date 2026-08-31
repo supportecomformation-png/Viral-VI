@@ -33,7 +33,15 @@ def _resolve_database_url():
 
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-me-in-prod")
+    # Clé de signature des sessions Flask. On lit d'abord APP_SECRET_KEY /
+    # FLASK_SECRET_KEY pour éviter tout conflit avec une variable `SECRET_KEY`
+    # déjà occupée par une intégration (Stripe, etc.).
+    SECRET_KEY = (
+        os.environ.get("APP_SECRET_KEY")
+        or os.environ.get("FLASK_SECRET_KEY")
+        or os.environ.get("SECRET_KEY")
+        or "dev-secret-change-me-in-prod"
+    )
 
     DATABASE_URL = _resolve_database_url()
     if DATABASE_URL.startswith("postgres://"):
