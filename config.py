@@ -4,20 +4,38 @@ from datetime import timedelta
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
+def _resolve_database_url():
+    """Trouve l'URL de connexion Postgres quel que soit le nom de variable.
+
+    L'intégration Neon/Vercel Postgres crée des variables préfixées
+    (ex. `viralvi_POSTGRES_URL`) ; on gère aussi ce cas.
+    On écarte les variantes `PRISMA` (`?pgbouncer=true`, rejeté par libpq)
+    et `NO_SSL`. `POSTGRES_URL` (poolée) est privilégiée pour le serverless.
+    """
+    for name in ("DATABASE_URL", "POSTGRES_URL",
+                 "POSTGRES_URL_NON_POOLING", "DATABASE_URL_UNPOOLED"):
+        if os.environ.get(name):
+            return os.environ[name]
+
+    def _find(suffix, exclude=()):
+        for key, val in os.environ.items():
+            if key.endswith(suffix) and val and not any(x in key for x in exclude):
+                return val
+        return None
+
+    return (
+        _find("_POSTGRES_URL", exclude=("PRISMA", "NO_SSL"))
+        or _find("_POSTGRES_URL_NON_POOLING")
+        or _find("_DATABASE_URL_UNPOOLED")
+        or _find("_DATABASE_URL", exclude=("UNPOOLED",))
+        or ""
+    )
+
+
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-me-in-prod")
 
-    # URL de connexion PostgreSQL (Vercel Postgres / Neon / Supabase...).
-    # Vercel Postgres injecte plusieurs variables ; on prend la première utile.
-    # NB : POSTGRES_PRISMA_URL est ignoré (contient `?pgbouncer=true`, rejeté
-    # par libpq). POSTGRES_URL est déjà la chaîne poolée, idéale en serverless.
-    DATABASE_URL = (
-        os.environ.get("DATABASE_URL")
-        or os.environ.get("POSTGRES_URL")
-        or os.environ.get("POSTGRES_URL_NON_POOLING")
-        or os.environ.get("DATABASE_URL_UNPOOLED")
-        or ""
-    )
+    DATABASE_URL = _resolve_database_url()
     if DATABASE_URL.startswith("postgres://"):
         DATABASE_URL = "postgresql://" + DATABASE_URL[len("postgres://"):]
 

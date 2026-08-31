@@ -22,16 +22,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
 from initial_news import NEWS_ITEMS  # noqa: E402
+from config import Config  # noqa: E402
 
-DATABASE_URL = (
-    os.environ.get("DATABASE_URL")
-    or os.environ.get("POSTGRES_URL")
-    or os.environ.get("POSTGRES_URL_NON_POOLING")
-    or os.environ.get("DATABASE_URL_UNPOOLED")
-    or ""
-)
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = "postgresql://" + DATABASE_URL[len("postgres://"):]
+DATABASE_URL = Config.DATABASE_URL
 
 
 def main():
