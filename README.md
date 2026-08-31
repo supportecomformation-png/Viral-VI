@@ -118,22 +118,36 @@ L'app reste une appli WSGI classique :
 
 ## Brancher Stripe (abonnement Pro)
 
-1. Crée un compte Stripe, un produit "ViralVI Pro" avec un prix récurrent
-   mensuel.
-2. Renseigne `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`,
-   `STRIPE_PUBLISHABLE_KEY`.
-3. Crée un endpoint webhook Stripe pointant vers
-   `https://ton-domaine/billing/webhook`, écoutant au minimum
-   `checkout.session.completed` et `customer.subscription.deleted`.
-   Renseigne `STRIPE_WEBHOOK_SECRET` avec le secret fourni par Stripe.
-4. Le fichier `engine/stripe_client.py` fait les appels REST directs
-   (pas besoin du SDK officiel `stripe`) — pour une vérification de
-   signature plus robuste en production critique, tu peux basculer sur
-   `pip install stripe` et utiliser `stripe.Webhook.construct_event`.
+1. Crée un **produit** "ViralVI Pro" avec un **prix récurrent mensuel**
+   (19 €). Copie l'ID du prix (`price_…`).
+2. Ajoute les variables d'environnement :
+   - `STRIPE_SECRET_KEY` — `sk_test_…` (mode test) ou `sk_live_…` (prod)
+   - `STRIPE_PRICE_ID` — le `price_…` ci-dessus
+   - `STRIPE_WEBHOOK_SECRET` — `whsec_…` (étape 3)
+3. Crée un **webhook** vers `https://ton-domaine/billing/webhook`,
+   écoutant `checkout.session.completed` et
+   `customer.subscription.deleted`. Copie son *signing secret* dans
+   `STRIPE_WEBHOOK_SECRET`.
+4. Redéploie.
 
-Sans ces variables, le site reste pleinement fonctionnel en **mode
-démo** : personne n'est facturé, mais tu peux tester tout le parcours
-Free → Pro.
+`is_configured()` teste la présence de `STRIPE_SECRET_KEY` +
+`STRIPE_PRICE_ID` : dès qu'elles sont là, le bouton « M'abonner » ouvre
+un vrai Stripe Checkout. Au retour, `/billing/success?session_id=…`
+confirme le paiement immédiatement (le webhook sert de doublon fiable et
+gère les résiliations).
+
+`engine/stripe_client.py` fait des appels REST directs (pas de SDK). Pour
+une prod critique, tu peux passer au SDK officiel `stripe` et à
+`stripe.Webhook.construct_event`.
+
+Sans ces variables, le site reste en **mode démo** : le bouton
+« M'abonner » active l'abonnement sans paiement réel.
+
+### Tester d'abord en mode test
+
+Utilise les clés `sk_test_…` + un prix créé en mode test + le webhook en
+mode test. Carte de test : `4242 4242 4242 4242`, date future, CVC
+quelconque. Une fois le tunnel validé, bascule sur les clés `live`.
 
 ## Actus GTA 6 automatiques chaque jour
 

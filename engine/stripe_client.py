@@ -25,9 +25,12 @@ def create_checkout_session(app_config, user_email, success_url, cancel_url, cli
     secret_key = app_config["STRIPE_SECRET_KEY"]
     price_id = app_config["STRIPE_PRICE_ID"]
 
+    # {CHECKOUT_SESSION_ID} est remplacé par Stripe dans l'URL de retour ;
+    # il permet de confirmer le paiement même si le webhook tarde.
+    sep = "&" if "?" in success_url else "?"
     data = {
         "mode": "subscription",
-        "success_url": success_url,
+        "success_url": f"{success_url}{sep}session_id={{CHECKOUT_SESSION_ID}}",
         "cancel_url": cancel_url,
         "customer_email": user_email,
         "client_reference_id": str(client_reference_id),
@@ -50,6 +53,24 @@ def create_checkout_session(app_config, user_email, success_url, cancel_url, cli
 
     session = resp.json()
     return session.get("url"), None
+
+
+def retrieve_checkout_session(app_config, session_id):
+    """Récupère une session Checkout auprès de Stripe. Retourne (session, error)."""
+    secret_key = app_config.get("STRIPE_SECRET_KEY")
+    if not secret_key or not session_id:
+        return None, "not_configured"
+    try:
+        resp = requests.get(
+            f"{STRIPE_API_BASE}/checkout/sessions/{session_id}",
+            auth=(secret_key, ""),
+            timeout=TIMEOUT_SECONDS,
+        )
+    except requests.RequestException as exc:
+        return None, f"network_error: {exc}"
+    if resp.status_code != 200:
+        return None, f"stripe_error_{resp.status_code}"
+    return resp.json(), None
 
 
 def verify_and_parse_webhook(payload_body, signature_header, webhook_secret):

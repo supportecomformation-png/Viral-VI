@@ -2,7 +2,12 @@ from flask import Blueprint, render_template, redirect, url_for, flash, g, curre
 
 from auth_utils import login_required
 from db import execute
-from engine.stripe_client import is_configured, create_checkout_session, verify_and_parse_webhook
+from engine.stripe_client import (
+    is_configured,
+    create_checkout_session,
+    retrieve_checkout_session,
+    verify_and_parse_webhook,
+)
 
 bp = Blueprint("billing", __name__, url_prefix="/billing")
 
@@ -44,7 +49,23 @@ def upgrade():
 @bp.route("/success")
 @login_required
 def success():
-    flash("Paiement confirmé (ou en cours de confirmation par le webhook). Bienvenue dans ViralVI Pro !", "success")
+    # Confirmation immédiate à partir de la session Checkout (filet de
+    # sécurité si le webhook n'est pas encore arrivé / pas configuré).
+    session_id = request.args.get("session_id")
+    if g.user["plan"] != "pro" and session_id:
+        session, error = retrieve_checkout_session(current_app.config, session_id)
+        if session and not error:
+            paid = session.get("payment_status") == "paid"
+            ref = str(session.get("client_reference_id") or "")
+            if paid and ref == str(g.user["id"]):
+                execute(
+                    """UPDATE users
+                       SET plan = 'pro', stripe_customer_id = ?, stripe_subscription_id = ?
+                       WHERE id = ?""",
+                    (session.get("customer"), session.get("subscription"), g.user["id"]),
+                )
+
+    flash("Paiement confirmé, bienvenue dans ViralVI Pro !", "success")
     return redirect(url_for("dashboard.home"))
 
 
