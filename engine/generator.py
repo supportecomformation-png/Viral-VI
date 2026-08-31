@@ -35,11 +35,13 @@ ANGLES = {
         "premise": [
             "Ce point pourrait être bien plus important qu'on ne le pensait pour le jeu.",
             "Ce détail pourrait changer la façon dont on aborde une bonne partie de l'aventure.",
+            "Ce qui vient de sortir pourrait bien être l'info la plus sous-estimée du moment.",
         ],
         "context": "Depuis les premières infos, on avait tous une image assez précise en tête.",
         "twist": [
             "Mais ce qui vient de circuler ne colle pas exactement avec ce qu'on imaginait.",
             "Sauf que la réalité pourrait être assez éloignée de ce qu'on tenait pour acquis.",
+            "Et pourtant, un élément vient sérieusement fissurer cette certitude.",
         ],
         "stakes": [
             "Si c'est vrai, ça veut dire que Rockstar a fait des choix qu'on n'avait pas vus venir.",
@@ -64,11 +66,13 @@ ANGLES = {
         "premise": [
             "Ça pourrait être l'élément qui décide si tu précommandes maintenant ou pas.",
             "Ce détail pèse plus lourd qu'il n'en a l'air à quelques semaines de la sortie.",
+            "C'est le genre d'info qui prend une tout autre valeur à l'approche du lancement.",
         ],
         "context": "On sait déjà que le jeu sort le 19 novembre 2026 sur PS5 et Xbox Series.",
         "twist": [
             "Mais plus la date approche, plus certains détails changent la donne.",
             "Et à ce stade, ce genre d'info n'est plus un simple bruit de couloir.",
+            "Sauf qu'à moins de deux mois de la sortie, ça ne bougera quasiment plus.",
         ],
         "stakes": [
             "À ce stade du développement, chaque info compte : il n'y aura plus de gros changement.",
@@ -93,11 +97,13 @@ ANGLES = {
         "premise": [
             "Ce seul élément résume le saut de génération entre GTA 5 et GTA 6.",
             "C'est peut-être le meilleur exemple de tout ce qui a changé en 13 ans.",
+            "Sur ce terrain précis, GTA 6 ne joue plus du tout dans la même catégorie.",
         ],
         "context": "En 2013, on trouvait déjà GTA 5 impressionnant pour l'époque.",
         "twist": [
             "Mais quand tu mets les deux face à face aujourd'hui, GTA 5 prend un sacré coup de vieux.",
             "Sauf qu'à côté de GTA 6, ce qui semblait fou en 2013 paraît presque daté.",
+            "Et pourtant, l'écart est tel qu'on a du mal à croire que c'est la même licence.",
         ],
         "stakes": [
             "Ça montre que Rockstar n'a pas juste amélioré le jeu, il a changé d'échelle.",
@@ -122,11 +128,13 @@ ANGLES = {
         "premise": [
             "La relation entre Jason et Lucia pourrait être beaucoup moins centrale qu'on l'imaginait.",
             "Le lien entre les deux personnages pourrait n'être qu'un élément secondaire du scénario.",
+            "Ce qui devait être le cœur émotionnel du jeu pourrait finir en simple option.",
         ],
         "context": "Depuis le premier trailer, Rockstar nous les montre pourtant comme un vrai couple : complices, prêts à tout l'un pour l'autre.",
         "twist": [
             "Mais le plus surprenant, c'est que leur romance pourrait rester totalement optionnelle.",
             "Sauf que tu pourrais très bien traverser toute l'aventure sans faire évoluer leur relation.",
+            "Et pourtant, rien ne t'obligerait à t'investir dans cette histoire d'amour.",
         ],
         "stakes": [
             "Rockstar avait une occasion énorme de construire une histoire d'amour profonde, avec des choix capables de changer l'aventure.",
@@ -151,11 +159,13 @@ ANGLES = {
         "premise": [
             "Leonida serait bien plus dense qu'une simple carte agrandie.",
             "Ce n'est pas juste la taille de la carte qui impressionne, c'est sa richesse.",
+            "Ce qu'on découvre sur Leonida dépasse largement la question du nombre de kilomètres carrés.",
         ],
         "context": "On savait déjà que l'État de Leonida serait environ deux fois plus grand que Los Santos.",
         "twist": [
             "Mais la taille n'est pas vraiment le sujet : c'est ce qu'il y a dedans qui change tout.",
             "Sauf que le vrai défi, ce n'est pas de faire grand, c'est de faire vivant.",
+            "Et pourtant, c'est la densité, pas l'échelle, qui décidera si cette carte marque les esprits.",
         ],
         "stakes": [
             "Une grande carte vide, on connaît. Une carte grande ET vivante, c'est une autre histoire.",
@@ -180,11 +190,13 @@ ANGLES = {
         "premise": [
             "Ce détail pourrait justifier, ou pas, de mettre 80 à 100 dollars day one.",
             "C'est peut-être ce qui fait pencher la balance entre précommander et attendre.",
+            "À ce prix-là, ce genre d'info devient un vrai critère de décision.",
         ],
         "context": "On connaît déjà les tarifs : Édition Standard autour de 80 dollars, Édition Ultime autour de 100.",
         "twist": [
             "Mais le prix seul ne veut rien dire tant qu'on ne sait pas ce qu'il y a vraiment dans la boîte.",
             "Sauf qu'un tarif élevé n'est un problème que si le contenu ne suit pas.",
+            "Et pourtant, personne ne peut vraiment juger le rapport qualité-prix avant la sortie.",
         ],
         "stakes": [
             "À ce tarif, la moindre déception se paie cher, surtout sur l'édition la plus chère.",
@@ -209,11 +221,13 @@ ANGLES = {
         "premise": [
             "Il y a là un détail qui en dit plus sur le jeu que la plupart des grosses annonces.",
             "Ce petit passage cache une info plus parlante que tout le reste de la vidéo.",
+            "Le vrai sujet n'est pas ce que Rockstar montre, mais ce que ça laisse deviner.",
         ],
         "context": "Rockstar glisse toujours des indices dans ses trailers, ça a toujours été comme ça.",
         "twist": [
             "Et cette fois, le détail intéressant n'est pas celui que tout le monde a partagé.",
             "Sauf que tout le monde a regardé au mauvais endroit de l'image.",
+            "Et pourtant, la vraie info est passée quasiment inaperçue.",
         ],
         "stakes": [
             "Si je ne me trompe pas, ça donne une piste sérieuse sur le ton et le contenu du jeu.",
@@ -300,18 +314,24 @@ def _news_detail(news_summary):
     return sentence[:200] if len(sentence) > 12 else None
 
 
-def generate_template_variant(topic, angle_key, tone, news_summary=None, days_left=None, seed=None):
+def generate_template_variant(topic, angle_key, tone, news_summary=None, days_left=None,
+                              seed=None, variant_index=0):
     rng = random.Random(seed)
     angle = ANGLES.get(angle_key, ANGLES["leak"])
     sujet = _clean_topic(topic)
     detail = _news_detail(news_summary)
     jours = days_left if days_left is not None else "quelques"
 
-    hook = rng.choice(angle["hooks"]).format(jours=jours)
+    hooks = angle["hooks"]
+    hook = hooks[variant_index % len(hooks)].format(jours=jours)
 
     def slot(key):
+        """Slots à formulation multiple : rotation par variante pour un
+        maximum de contraste entre les 3 scripts d'un même angle."""
         val = angle[key]
-        return rng.choice(val) if isinstance(val, list) else val
+        if isinstance(val, list):
+            return val[variant_index % len(val)]
+        return val
 
     body = [
         rng.choice(TONE_INTRO.get(tone, TONE_INTRO["choc"])),
@@ -384,7 +404,7 @@ def generate_script_variants(topic, tone="choc", angle_key=None, news_summary=No
     for i, a_key in enumerate(chosen_angles):
         variant = generate_template_variant(
             topic, a_key, tone, news_summary=news_summary, days_left=days_left,
-            seed=i * 97 + 13,
+            seed=i * 97 + 13, variant_index=i,
         )
         score = compute_virality_score(
             variant["hook"], variant["body"], variant["cta"], variant["hashtags"],
