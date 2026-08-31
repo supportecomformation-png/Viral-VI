@@ -538,8 +538,78 @@ a:hover { color: var(--cyan); }
 .footer-meta { margin-top: 10px; }
 
 /* ---------- Responsive ---------- */
-@media (max-width: 900px) {
+@media (max-width: 960px) {
   .hero, .dash-grid { grid-template-columns: 1fr; }
   .features, .news-grid, .news-grid--full, .pricing-grid { grid-template-columns: 1fr; }
-  .hero-visual { order: -1; }
+  .hero { gap: 32px; padding: 44px 24px 40px; }
+  .hero-visual { order: 2; }               /* le visuel passe APRÈS le texte */
+}
+
+@media (max-width: 720px) {
+  /* Header : marque sur une ligne, nav qui passe dessous et wrappe proprement */
+  .header-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+  .brand { align-self: flex-start; }
+  .brand-name { font-size: 1.08rem; }
+  .main-nav { flex-wrap: wrap; gap: 12px 16px; }
+  .main-nav a { white-space: nowrap; }
+
+  /* Marges latérales resserrées */
+  .container { padding: 0 16px; }
+  h1 { font-size: clamp(1.85rem, 7vw, 2.4rem); }
+
+  /* Hero */
+  .hero { padding: 24px 16px 32px; }
+  .hero-lead { font-size: 1rem; }
+  .hero-actions { flex-direction: column; align-items: stretch; }
+  .hero-actions .btn { width: 100%; }
+  .phone-mock { width: 100%; max-width: 300px; }
+
+  /* Sections marketing */
+  .features { padding: 16px 16px 40px; gap: 14px; }
+  .feature-card { padding: 20px; }
+  .news-preview { padding: 16px 16px 40px; }
+  .section-heading { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .page-header { padding: 32px 16px 16px; }
+  .cta-band { padding: 40px 16px 52px; }
+  .cta-band .btn { width: 100%; }
+
+  /* Auth */
+  .auth-section { padding: 40px 16px; }
+  .auth-card { padding: 26px 22px; }
+
+  /* Dashboard */
+  .dash-header { padding: 26px 16px 12px; }
+  .dash-grid { padding: 8px 16px 32px; }
+  .generator-panel, .results-panel { padding: 20px 18px; }
+  .field-row { grid-template-columns: 1fr; }         /* Angle / Ton empilés */
+  .variant-actions { flex-wrap: wrap; }
+  .variant-actions .btn { flex: 1 1 auto; }
+  .breakdown-row { grid-template-columns: 92px 1fr 36px; gap: 6px; font-size: 0.72rem; }
+  .history-section { padding: 8px 16px 48px; }
+
+  /* Pricing */
+  .pricing-grid { padding: 16px 16px 52px; }
+  .price-card { padding: 24px 22px; }
+
+  /* Footer */
+  .site-footer { padding: 24px 16px; }
+}
+
+@media (max-width: 380px) {
+  .brand-name { display: none; }   /* on garde juste le sigle "VI" */
+  h1 { font-size: 1.7rem; }
+  .news-picker { max-height: 200px; }
+}
+
+/* Cibles tactiles confortables (~44px) */
+@media (hover: none) and (pointer: coarse) {
+  .btn { min-height: 44px; }
+  .main-nav a { padding: 6px 2px; }
+  .icon-btn { padding: 8px 10px; font-size: 1.15rem; }
+  .btn:hover { transform: none; }   /* pas d'effet hover "collant" au tap */
 }
