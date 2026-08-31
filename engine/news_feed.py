@@ -39,6 +39,17 @@ KEYWORD_TAGS = {
 }
 
 _TAG_RE = re.compile(r"<[^>]+>")
+_WS_RE = re.compile(r"\s+")
+
+
+def clean_title(title):
+    """Retire le suffixe « - Éditeur » que Google News ajoute à chaque titre."""
+    title = _WS_RE.sub(" ", title).strip()
+    for sep in (" - ", " — ", " | "):
+        head, found, tail = title.rpartition(sep)
+        if found and head and len(tail) <= 45:
+            return head.strip()
+    return title
 
 
 def guess_tags(title, summary):
@@ -52,31 +63,35 @@ def parse_rss(xml_text, limit=15):
     root = ET.fromstring(xml_text)
     items = []
     for item_el in root.findall("./channel/item")[:limit]:
-        title = (item_el.findtext("title") or "").strip()
+        raw_title = (item_el.findtext("title") or "").strip()
         link = (item_el.findtext("link") or "").strip()
         description = (item_el.findtext("description") or "").strip()
         source_el = item_el.find("source")
         source = source_el.text.strip() if source_el is not None and source_el.text else "Google News"
         pub_date_raw = (item_el.findtext("pubDate") or "").strip()
 
+        if not raw_title or not link:
+            continue
+
+        title = clean_title(raw_title)
+
         try:
             published_at = parsedate_to_datetime(pub_date_raw).date().isoformat()
         except (TypeError, ValueError):
             published_at = datetime.now(timezone.utc).date().isoformat()
 
-        clean_summary = html.unescape(_TAG_RE.sub("", description)).strip()
-        if len(clean_summary) < 20:
-            clean_summary = title
-
-        if not title or not link:
-            continue
+        summary = _WS_RE.sub(" ", html.unescape(_TAG_RE.sub("", description))).strip()
+        # Le flux "search" de Google News ne fournit souvent qu'un écho du titre
+        # comme description : dans ce cas on garde un résumé propre et lisible.
+        if len(summary) < len(title) + 15 or title.lower() in summary.lower():
+            summary = f"{title}. À suivre sur {source}."
 
         items.append({
             "title": title,
-            "summary": clean_summary[:400],
+            "summary": summary[:400],
             "url": link,
             "source": source,
-            "tags": guess_tags(title, clean_summary),
+            "tags": guess_tags(title, summary),
             "published_at": published_at,
         })
     return items

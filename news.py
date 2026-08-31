@@ -16,8 +16,8 @@ def feed():
 
 
 def _insert_items(items):
-    """Insère une liste d'actus, en ignorant les doublons (URL unique)."""
-    inserted = 0
+    """Insère (ou met à jour, si l'URL existe déjà) une liste d'actus."""
+    processed = 0
     for item in items:
         title = (item.get("title") or "").strip()
         url = (item.get("url") or "").strip()
@@ -30,16 +30,20 @@ def _insert_items(items):
             continue
 
         try:
-            new_id = execute(
+            execute(
                 """INSERT INTO news_items (title, summary, url, source, tags, published_at)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
+                   VALUES (?, ?, ?, ?, ?, ?)
+                   ON CONFLICT (url) DO UPDATE SET
+                     title = EXCLUDED.title,
+                     summary = EXCLUDED.summary,
+                     source = EXCLUDED.source,
+                     tags = EXCLUDED.tags""",
                 (title, summary, url, source, tags, published_at),
             )
         except Exception:
             continue  # une ligne bancale ne doit pas casser tout le lot
-        if new_id:
-            inserted += 1
-    return inserted
+        processed += 1
+    return processed
 
 
 @bp.route("/api/refresh", methods=["POST"])
@@ -55,8 +59,8 @@ def refresh():
 
     payload = request.get_json(force=True, silent=True) or {}
     items = payload.get("items", [])
-    inserted = _insert_items(items)
-    return jsonify({"ok": True, "inserted": inserted, "received": len(items)})
+    processed = _insert_items(items)
+    return jsonify({"ok": True, "upserted": processed, "received": len(items)})
 
 
 @bp.route("/api/cron", methods=["GET", "POST"])
@@ -90,5 +94,5 @@ def cron_refresh():
     except Exception as exc:  # réseau / RSS indisponible
         return jsonify({"error": "fetch_failed", "detail": str(exc)}), 502
 
-    inserted = _insert_items(items)
-    return jsonify({"ok": True, "inserted": inserted, "fetched": len(items)})
+    processed = _insert_items(items)
+    return jsonify({"ok": True, "upserted": processed, "fetched": len(items)})
