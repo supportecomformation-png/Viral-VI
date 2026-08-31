@@ -137,24 +137,31 @@ Free → Pro.
 
 ## Actus GTA 6 automatiques chaque jour
 
-`scripts/fetch_news.py` interroge le flux RSS public de Google News (pas
-de clé API requise), filtre les actus GTA 6, devine des tags pertinents,
-puis les envoie à l'endpoint `POST /news/api/refresh` (protégé par le
-token `ADMIN_REFRESH_TOKEN`). Les doublons (même URL) sont ignorés
-automatiquement.
+Le fil se rafraîchit tout seul via l'actu GTA 6 de Google News (flux RSS
+public, aucune clé API). Les doublons (même URL) sont ignorés.
 
-**Option A — cron classique sur ton serveur :**
+**Sur Vercel — cron natif (recommandé, déjà configuré).**
+`vercel.json` déclare un cron qui appelle `GET /news/api/cron` chaque jour
+à 7h UTC. Rien à installer. Pour sécuriser l'endpoint :
+
+1. Génère une valeur aléatoire et ajoute la variable d'environnement
+   `CRON_SECRET` (Vercel l'enverra automatiquement dans l'en-tête
+   `Authorization: Bearer …` de ses appels cron).
+2. Redéploie. Le cron apparaît dans l'onglet **Cron Jobs** du projet ;
+   tu peux le déclencher à la main pour tester.
+
+> Plan Hobby : 1 exécution/jour maximum — ce qui correspond exactement au
+> besoin ici.
+
+**Autre hébergeur — cron classique :**
 
 ```cron
 0 8 * * * cd /chemin/vers/viralvi && APP_BASE_URL=https://ton-domaine ADMIN_REFRESH_TOKEN=xxx python3 scripts/fetch_news.py
 ```
 
-**Option B — GitHub Actions** (fichier déjà prêt :
-`.github/workflows/daily-news.yml`) : ajoute `APP_BASE_URL` et
-`ADMIN_REFRESH_TOKEN` dans les secrets du repo GitHub, et l'action tourne
-chaque jour à 7h UTC automatiquement (aucun serveur cron à gérer).
-
-Tester sans rien envoyer : `python scripts/fetch_news.py --dry-run`
+Ce script poste sur `POST /news/api/refresh` (protégé par
+`ADMIN_REFRESH_TOKEN`). Aperçu sans rien envoyer :
+`python scripts/fetch_news.py --dry-run`.
 
 ## Structure du projet
 
