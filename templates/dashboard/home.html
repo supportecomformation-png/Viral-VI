@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Générateur — ViralVI{% endblock %}
+{% block content %}
+<section class="container dash-header">
+  <div>
+    <h1>Salut {{ current_user.display_name }} 👋</h1>
+    <p>J-{{ days_left }} avant la sortie de GTA 6. Génère ton prochain script.</p>
+  </div>
+  <div class="credits-pill" id="credits-pill">
+    {% if current_user.plan == 'pro' %}
+      <span class="badge-pro">PRO</span> Scripts illimités
+    {% else %}
+      <strong id="credits-remaining">{{ current_user.credits_remaining }}</strong> scripts gratuits restants
+      · <a href="{{ url_for('billing.pricing') }}">Passer Pro</a>
+    {% endif %}
+  </div>
+</section>
+
+<section class="container dash-grid">
+  <div class="generator-panel">
+    <h2>1. Choisis un sujet</h2>
+    <div class="news-picker">
+      {% for item in news %}
+        <label class="news-radio">
+          <input type="radio" name="news_pick" value="{{ item.id }}" data-title="{{ item.title }}" data-summary="{{ item.summary|e }}" data-tags="{{ item.tags }}">
+          <span class="news-radio-card">
+            <span class="news-date">{{ item.published_at }}</span>
+            <span class="news-radio-title">{{ item.title }}</span>
+          </span>
+        </label>
+      {% endfor %}
+    </div>
+
+    <label for="topic" class="field-label">Ou décris ton propre sujet</label>
+    <input type="text" id="topic" placeholder="Ex : le nouveau trailer diffusé sur Netflix" maxlength="200">
+
+    <div class="field-row">
+      <div>
+        <label for="angle" class="field-label">Angle</label>
+        <select id="angle">
+          {% for value, label in angle_choices %}
+            <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="tone" class="field-label">Ton</label>
+        <select id="tone">
+          {% for value, label in tone_choices %}
+            <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="ai-toggle-row">
+      <label class="switch">
+        <input type="checkbox" id="use-ai">
+        <span class="slider"></span>
+      </label>
+      <span>Mode IA avancé (optionnel) — utilise ta propre clé API Anthropic</span>
+    </div>
+    <input type="password" id="api-key" class="ai-key-input" placeholder="sk-ant-... (non stockée sur nos serveurs)" style="display:none;">
+    <p class="ai-key-note" id="ai-key-note" style="display:none;">
+      Ta clé n'est jamais envoyée à nos bases de données : elle est utilisée uniquement le temps de la génération, puis conservée seulement dans ton navigateur (localStorage) si tu le souhaites.
+    </p>
+
+    <button id="generate-btn" class="btn btn-primary btn-block btn-lg">⚡ Générer 3 scripts</button>
+    <p id="generate-error" class="form-error" style="display:none;"></p>
+  </div>
+
+  <div class="results-panel" id="results-panel">
+    <h2>2. Choisis ta variante</h2>
+    <div id="results-empty" class="results-empty">
+      <p>Tes scripts générés apparaîtront ici, classés par score de viralité.</p>
+    </div>
+    <div id="results-list" class="results-list"></div>
+  </div>
+</section>
+
+<section class="container history-section">
+  <h2>Historique</h2>
+  <div class="history-list" id="history-list">
+    {% for s in history %}
+      <article class="history-card">
+        <div class="history-score" data-score="{{ s.virality_score }}">{{ s.virality_score }}</div>
+        <div class="history-body">
+          <p class="history-hook">{{ s.hook }}</p>
+          <p class="history-meta">{{ s.angle }} · {{ s.created_at }}</p>
+        </div>
+        <button class="icon-btn delete-script-btn" data-id="{{ s.id }}" title="Supprimer">✕</button>
+      </article>
+    {% else %}
+      <p class="empty-note">Aucun script sauvegardé pour l'instant.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<template id="variant-template">
+  <article class="variant-card">
+    <div class="variant-header">
+      <div class="score-gauge">
+        <svg viewBox="0 0 36 36" class="gauge-ring">
+          <path class="gauge-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+          <path class="gauge-fill" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke-dasharray="0, 100"></path>
+        </svg>
+        <span class="gauge-value">0</span>
+      </div>
+      <div>
+        <span class="variant-angle"></span>
+        <span class="variant-label"></span>
+      </div>
+    </div>
+
+    <p class="variant-hook"></p>
+    <div class="variant-body"></div>
+    <p class="variant-cta"></p>
+    <p class="variant-hashtags"></p>
+
+    <div class="breakdown-list"></div>
+    <div class="tips-list"></div>
+
+    <div class="variant-actions">
+      <button class="btn btn-ghost btn-sm copy-btn">📋 Copier</button>
+      <button class="btn btn-primary btn-sm save-btn">💾 Sauvegarder</button>
+    </div>
+  </article>
+</template>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  window.VIRALVI_PLAN = "{{ current_user.plan }}";
+</script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% endblock %}

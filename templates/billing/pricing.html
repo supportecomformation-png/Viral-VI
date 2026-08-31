@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Tarifs — ViralVI{% endblock %}
+{% block content %}
+<section class="container page-header">
+  <h1>Tarifs</h1>
+  <p>Commence gratuitement, passe Pro quand tu publies tous les jours.</p>
+  {% if not stripe_configured %}
+    <p class="badge-demo">Mode démo actif : Stripe n'est pas encore configuré, le bouton "Passer Pro" active le plan Pro directement pour te laisser tester.</p>
+  {% endif %}
+</section>
+
+<section class="container pricing-grid">
+  <div class="price-card">
+    <h2>Free</h2>
+    <p class="price-value">0€<span>/mois</span></p>
+    <ul class="price-features">
+      <li>5 scripts par mois</li>
+      <li>Score de viralité complet</li>
+      <li>Accès au fil d'actus GTA 6</li>
+      <li>3 variantes par génération</li>
+    </ul>
+    {% if current_user %}
+      <a href="{{ url_for('dashboard.home') }}" class="btn btn-ghost btn-block">Continuer avec Free</a>
+    {% else %}
+      <a href="{{ url_for('auth.signup') }}" class="btn btn-ghost btn-block">Commencer gratuitement</a>
+    {% endif %}
+  </div>
+
+  <div class="price-card price-card--highlight">
+    <span class="price-badge">Le plus populaire</span>
+    <h2>Pro</h2>
+    <p class="price-value">{{ price }}€<span>/mois</span></p>
+    <ul class="price-features">
+      <li>Scripts illimités</li>
+      <li>Score de viralité complet + conseils</li>
+      <li>Mode IA (avec ta propre clé API)</li>
+      <li>Historique complet des scripts</li>
+      <li>Support prioritaire</li>
+    </ul>
+    {% if current_user %}
+      <form method="post" action="{{ url_for('billing.upgrade') }}">
+        <button type="submit" class="btn btn-primary btn-block">Passer Pro</button>
+      </form>
+    {% else %}
+      <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-block">Créer un compte pour passer Pro</a>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

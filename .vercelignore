@@ -1,0 +1,8 @@
+instance/
+*.sqlite3
+.venv/
+venv/
+__pycache__/
+scripts/
+.github/
+gta6-viralvi-saas.zip

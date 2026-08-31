@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Actus GTA 6 — ViralVI{% endblock %}
+{% block content %}
+<section class="container page-header">
+  <h1>Actus GTA 6</h1>
+  <p>Fil d'actualités mis à jour en continu — idéal pour trouver ton prochain sujet de vidéo.</p>
+</section>
+
+<section class="container news-grid news-grid--full">
+  {% for item in news %}
+    <article class="news-card">
+      <div class="news-card-meta">
+        <span class="news-date">{{ item.published_at }}</span>
+        {% if item.source %}<span class="news-source">{{ item.source }}</span>{% endif %}
+      </div>
+      <h3>{{ item.title }}</h3>
+      <p>{{ item.summary }}</p>
+      {% if item.tags %}
+        <div class="tag-row">
+          {% for tag in item.tags.split(',') %}
+            <span class="tag-pill">{{ tag.strip() }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+      <div class="news-card-actions">
+        {% if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener" class="link-arrow">Source →</a>{% endif %}
+        {% if current_user %}
+          <a href="{{ url_for('dashboard.home') }}?news_id={{ item.id }}" class="btn btn-primary btn-sm">Générer un script</a>
+        {% else %}
+          <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-sm">Générer un script</a>
+        {% endif %}
+      </div>
+    </article>
+  {% else %}
+    <p>Aucune actu pour le moment.</p>
+  {% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero container">
+  <div class="hero-copy">
+    <span class="eyebrow">J-{{ days_left }} avant la sortie de GTA 6</span>
+    <h1>Des scripts TikTok viraux sur GTA 6, générés en 10 secondes.</h1>
+    <p class="hero-lead">
+      ViralVI transforme chaque actu GTA 6 en script prêt à filmer, avec un
+      <strong>score de viralité</strong> détaillé et des conseils pour l'améliorer.
+      Une nouvelle sélection d'actualités chaque jour, pour ne jamais manquer d'idées.
+    </p>
+    <div class="hero-actions">
+      <a href="{{ url_for('auth.signup') }}" class="btn btn-primary">Essayer gratuitement</a>
+      <a href="{{ url_for('news.feed') }}" class="btn btn-ghost">Voir les actus du jour</a>
+    </div>
+    <p class="hero-note">5 scripts gratuits par mois · sans carte bancaire</p>
+  </div>
+
+  <div class="hero-visual" aria-hidden="true">
+    <div class="phone-mock">
+      <div class="phone-notch"></div>
+      <div class="phone-score">
+        <span class="score-label">Score de viralité</span>
+        <span class="score-value">92</span>
+      </div>
+      <div class="phone-line phone-line--hook">« Personne ne parle encore de Leonida, et c'est une erreur. »</div>
+      <div class="phone-line">Le detail que tout le monde a zappé...</div>
+      <div class="phone-line">Rockstar n'a jamais confirmé, mais tout colle.</div>
+      <div class="phone-tags">#GTA6 #GTA6News #Leak #FYP</div>
+    </div>
+  </div>
+</section>
+
+<section class="container features">
+  <div class="feature-card">
+    <span class="feature-icon">⚡</span>
+    <h3>Générateur instantané</h3>
+    <p>Choisis un angle (leak, comparaison, personnages...), un ton, et reçois 3 variantes de script prêtes à filmer.</p>
+  </div>
+  <div class="feature-card">
+    <span class="feature-icon">📈</span>
+    <h3>Score de viralité expliqué</h3>
+    <p>Chaque script est noté sur 100 : hook, tension, rythme, pertinence de l'actu, appel à l'action, hashtags — avec des conseils concrets.</p>
+  </div>
+  <div class="feature-card">
+    <span class="feature-icon">📰</span>
+    <h3>Actus GTA 6 chaque jour</h3>
+    <p>Un fil d'actualités mis à jour en continu pour ne jamais tomber en panne d'idées de contenu.</p>
+  </div>
+</section>
+
+<section class="container news-preview">
+  <div class="section-heading">
+    <h2>Actus GTA 6 du moment ({{ news_count }} au total)</h2>
+    <a href="{{ url_for('news.feed') }}" class="link-arrow">Tout voir →</a>
+  </div>
+  <div class="news-grid">
+    {% for item in latest_news %}
+      <article class="news-card">
+        <div class="news-card-meta">
+          <span class="news-date">{{ item.published_at }}</span>
+          {% if item.source %}<span class="news-source">{{ item.source }}</span>{% endif %}
+        </div>
+        <h3>{{ item.title }}</h3>
+        <p>{{ item.summary }}</p>
+      </article>
+    {% else %}
+      <p>Actus en cours de chargement.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="container cta-band">
+  <h2>Prêt à publier ta prochaine vidéo virale sur GTA 6 ?</h2>
+  <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-lg">Créer mon compte gratuit</a>
+</section>
+{% endblock %}

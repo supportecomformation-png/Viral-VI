@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Créer un compte — ViralVI{% endblock %}
+{% block content %}
+<section class="container auth-section">
+  <div class="auth-card">
+    <h1>Créer ton compte</h1>
+    <p class="auth-subtitle">5 scripts gratuits par mois, sans carte bancaire.</p>
+    <form method="post" class="form">
+      <label for="display_name">Nom / pseudo</label>
+      <input type="text" id="display_name" name="display_name" placeholder="TonPseudoTikTok" autocomplete="nickname">
+
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" required autocomplete="email">
+
+      <label for="password">Mot de passe</label>
+      <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password">
+
+      <button type="submit" class="btn btn-primary btn-block">Créer mon compte</button>
+    </form>
+    <p class="auth-switch">Déjà un compte ? <a href="{{ url_for('auth.login') }}">Connecte-toi</a></p>
+  </div>
+</section>
+{% endblock %}

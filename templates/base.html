@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ViralVI — Scripts TikTok viraux sur GTA 6{% endblock %}</title>
+  <meta name="description" content="Génère des scripts TikTok viraux sur l'actualité de GTA 6, avec un score de viralité et une actu fraîche chaque jour.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="bg-scene" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="{{ url_for('landing') }}" class="brand">
+        <span class="brand-mark">VI</span>
+        <span class="brand-name">ViralVI</span>
+      </a>
+      <nav class="main-nav">
+        <a href="{{ url_for('news.feed') }}">Actus GTA 6</a>
+        <a href="{{ url_for('billing.pricing') }}">Tarifs</a>
+        {% if current_user %}
+          <a href="{{ url_for('dashboard.home') }}" class="nav-cta">Mon générateur</a>
+          <a href="{{ url_for('auth.logout') }}" class="nav-link-muted">Déconnexion</a>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}">Connexion</a>
+          <a href="{{ url_for('auth.signup') }}" class="nav-cta">Essayer gratuitement</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="container flash-stack">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>
+        ViralVI est un outil indépendant à destination des créateurs de contenu.
+        Il n'est <strong>pas affilié, associé, ni approuvé</strong> par Rockstar Games ou
+        Take-Two Interactive. « GTA 6 », « Grand Theft Auto » et « Vice City » sont des
+        marques déposées de leurs propriétaires respectifs, citées ici à titre informatif.
+      </p>
+      <p class="footer-meta">© {{ current_year }} ViralVI</p>
+    </div>
+  </footer>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>
