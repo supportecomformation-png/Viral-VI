@@ -101,40 +101,46 @@ def score_emotion(full_text):
 
 
 def score_structure(body_lines):
-    """0-20 points — rythme et lisibilité pour un format 20-45s."""
+    """0-20 points — rythme et lisibilité pour un format long en paragraphes courts."""
     lines = [l for l in body_lines if l.strip()]
     score = 0
     notes = []
 
+    # Format visé : script "hot take" long en paragraphes d'1-2 phrases.
     n = len(lines)
-    if 3 <= n <= 6:
+    if 10 <= n <= 22:
         score += 10
-    elif n < 3:
+    elif 6 <= n < 10:
+        score += 7
+        notes.append("Développe un peu plus : vise ~12 à 18 paragraphes courts pour un format long qui tient l'attention.")
+    elif n < 6:
         score += 4
-        notes.append("Le corps est trop court : vise 3 à 6 punchlines pour tenir 20-45 secondes à l'oral.")
+        notes.append("Le corps est trop court : un script long performant fait ~1400-1700 caractères, en paragraphes d'une à deux phrases.")
     else:
         score += 6
-        notes.append("Trop de lignes : un script TikTok qui performe reste dense, coupe le superflu.")
+        notes.append("Trop de paragraphes : resserre, chaque ligne doit faire avancer l'argument.")
 
-    # Longueur moyenne des phrases (phrases courtes = meilleur rythme à l'oral)
+    # Chaque paragraphe doit rester court (1-2 phrases) pour le débit à l'oral.
     lengths = [len(l.split()) for l in lines] or [0]
     avg_len = sum(lengths) / len(lengths)
-    if avg_len <= 12:
+    if avg_len <= 16:
         score += 6
-    elif avg_len <= 18:
+    elif avg_len <= 24:
         score += 3
     else:
-        notes.append("Raccourcis tes phrases (idéal : moins de 12 mots) pour un débit qui claque à l'oral.")
+        notes.append("Coupe tes paragraphes : une à deux phrases courtes maximum par ligne, sinon le débit décroche.")
 
     # Variété de longueur (évite la monotonie)
-    if len(set(lengths)) >= max(2, n - 1):
+    if len(set(lengths)) >= max(3, n // 2):
         score += 4
+    else:
+        score += 2
 
     # Mots de remplissage à éviter
     filler_hits = sum(_count_hits(l.lower(), FILLER_WORDS) for l in lines)
-    if filler_hits > 0:
-        score = max(0, score - filler_hits)
-        notes.append("Supprime les mots de remplissage (\"du coup\", \"en fait\"...) qui diluent le rythme.")
+    if filler_hits > 2:
+        score = max(0, score - (filler_hits - 2))
+        notes.append("Réduis les mots de remplissage (\"du coup\", \"en fait\"...) qui diluent le rythme.")
 
     return min(score, 20), notes
 

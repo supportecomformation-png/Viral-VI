@@ -90,7 +90,10 @@
     gaugeValue.textContent = score;
 
     node.querySelector(".variant-angle").textContent = variant.angle_label || "";
-    node.querySelector(".variant-label").textContent = variant.score.label || "";
+    const chars = variant.char_count
+      || (variant.hook.length + variant.body.join("").length + variant.cta.length);
+    node.querySelector(".variant-label").textContent =
+      `${variant.score.label || ""} · ~${chars} caractères`;
     node.querySelector(".variant-hook").textContent = variant.hook;
 
     const bodyEl = node.querySelector(".variant-body");
@@ -131,7 +134,7 @@
     }
 
     node.querySelector(".copy-btn").addEventListener("click", () => {
-      const text = [variant.hook, "", ...variant.body, "", "👉 " + variant.cta, "", variant.hashtags.join(" ")].join("\n");
+      const text = [variant.hook, "", variant.body.join("\n\n"), "", "👉 " + variant.cta, "", variant.hashtags.join(" ")].join("\n");
       navigator.clipboard.writeText(text).then(() => {
         const btn = card.querySelector(".copy-btn");
         const original = btn.textContent;
