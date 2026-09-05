@@ -40,6 +40,8 @@ def create_app(config_class=Config):
 
     @app.route("/")
     def landing():
+        from news import _self_heal_if_stale
+        _self_heal_if_stale()
         news_count = query_one("SELECT COUNT(*) AS c FROM news_items")["c"]
         latest_news = query_all(
             "SELECT * FROM news_items ORDER BY published_at DESC, id DESC LIMIT 4"

@@ -1,16 +1,42 @@
 import os
+from datetime import datetime, timezone
 
 from flask import Blueprint, render_template, request, jsonify
 
-from db import query_all, execute
+from db import query_all, query_one, execute
 
 bp = Blueprint("news", __name__, url_prefix="/news")
 
 ADMIN_TOKEN_HEADER = "X-Admin-Token"
 
+# Le cron Vercel est censé rafraîchir le fil chaque jour, mais son
+# déclenchement n'est pas garanti à 100% (plan, config, incident Vercel...).
+# Filet de sécurité : si la dernière actu insérée est trop vieille, une
+# requête normale sur le fil déclenche elle-même un rafraîchissement.
+STALE_AFTER_HOURS = 20
+
+
+def _self_heal_if_stale():
+    try:
+        row = query_one("SELECT created_at FROM news_items ORDER BY created_at DESC LIMIT 1")
+        if not row or not row.get("created_at"):
+            return
+        created = datetime.strptime(row["created_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        age_hours = (datetime.now(timezone.utc) - created).total_seconds() / 3600
+        if age_hours < STALE_AFTER_HOURS:
+            return
+
+        from engine.news_feed import fetch_gta6_news
+        # Timeout court : ce fetch se produit dans une requête utilisateur
+        # normale, il ne doit pas risquer de dépasser le timeout de la fonction.
+        _insert_items(fetch_gta6_news(timeout=6))
+    except Exception:
+        pass  # le fil d'actus ne doit jamais faire planter une page normale
+
 
 @bp.route("/")
 def feed():
+    _self_heal_if_stale()
     items = query_all("SELECT * FROM news_items ORDER BY published_at DESC, id DESC")
     return render_template("news/feed.html", news=items)
 
