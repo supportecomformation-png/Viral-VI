@@ -90,13 +90,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .main-nav a.btn { color: #04110b; }
 .nav-muted { color: var(--faint) !important; }
 
-.demo-banner {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 6px 12px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em;
-  color: var(--warn); background: rgba(255, 181, 71, 0.08); border-bottom: 1px solid rgba(255, 181, 71, 0.18);
-  text-align: center;
-}
-.demo-banner .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); flex-shrink: 0; }
 
 /* ---------- Boutons ---------- */
 .btn {

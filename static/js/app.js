@@ -490,7 +490,7 @@
 
     function render() {
       if (!sims.length) {
-        listEl.innerHTML = '<p class="empty-note">Aucune simulation pour l\'instant. Copie un wallet pour commencer.</p>';
+        listEl.innerHTML = '<p class="empty-note">Aucun trade pour l\'instant. Copie un wallet pour commencer.</p>';
         return false;
       }
       let anyActive = false;

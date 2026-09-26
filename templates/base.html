@@ -21,7 +21,7 @@
       <nav class="main-nav">
         <a href="{{ url_for('sim.traders') }}">Traders</a>
         {% if current_user %}
-          <a href="{{ url_for('sim.my_simulations') }}">Mes simulations</a>
+          <a href="{{ url_for('sim.my_simulations') }}">Mes Trades</a>
           <a href="{{ url_for('auth.logout') }}" class="nav-muted">Déconnexion</a>
         {% else %}
           <a href="{{ url_for('auth.login') }}">Connexion</a>
@@ -30,10 +30,6 @@
       </nav>
     </div>
   </header>
-
-  <div class="demo-banner">
-    <span class="dot"></span> Mode démo · argent fictif · {% if onchain_enabled %}aucun dépôt possible{% else %}aucune donnée on-chain réelle{% endif %}
-  </div>
 
   <main>
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -70,7 +66,7 @@
     </a>
     <a href="{{ url_for('sim.my_simulations') }}" data-nav="app">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-9M15 6h6v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span>Simulations</span>
+      <span>Mes Trades</span>
     </a>
     {% if current_user %}
       <a href="{{ url_for('auth.logout') }}" data-nav="account">
