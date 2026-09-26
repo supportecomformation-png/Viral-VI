@@ -607,9 +607,10 @@
     function showOrder(amount) {
       const nameEl = document.querySelector(".cs-name strong");
       overlay.classList.remove("done");
-      el("order-title").textContent = "Envoi de l'ordre…";
+      el("order-title").textContent = "Traitement";
       el("order-amount").textContent = U.usd(amount);
-      el("order-sub").textContent = "Copie de " + (nameEl ? nameEl.textContent : "ce wallet");
+      el("order-sub").textContent = nameEl ? nameEl.textContent : "Wallet";
+      U.applyAvatars(overlay);
       overlay.hidden = false;
       void overlay.offsetWidth;
       overlay.classList.add("show");
@@ -658,7 +659,7 @@
         // Laisse au moins un instant à l'animation "envoi" avant la validation.
         if (!reduceMotion) await wait(Math.max(0, 700 - (Date.now() - startedAt)));
         if (overlay.hidden) showOrder(amount);
-        el("order-title").textContent = "Copie confirmée";
+        el("order-title").textContent = "Terminé";
         overlay.classList.add("done");
         if (navigator.vibrate) { try { navigator.vibrate(30); } catch (e) {} }
         await wait(reduceMotion ? 600 : 1300);

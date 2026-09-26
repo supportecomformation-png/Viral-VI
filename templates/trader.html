@@ -77,14 +77,15 @@
 </section>
 
 <div class="order-overlay" id="order-overlay" role="status" aria-live="assertive" hidden>
-  <div class="order-card">
-    <div class="order-badge" id="order-badge">
-      <svg class="order-ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44"/></svg>
-      <svg class="order-check" viewBox="0 0 100 100" aria-hidden="true"><path d="M30 52l14 14 27-30"/></svg>
-    </div>
-    <h2 class="order-title" id="order-title">Envoi de l'ordre…</h2>
+  <div class="order-body">
+    <p class="order-label">Vous achetez</p>
     <p class="order-amount" id="order-amount"></p>
-    <p class="order-sub" id="order-sub"></p>
+    <p class="order-who"><span class="avatar order-avatar" data-avatar="{{ wallet }}"></span><span id="order-sub"></span></p>
+  </div>
+  <div class="order-btn" id="order-btn">
+    <span id="order-title">Traitement</span>
+    <svg class="order-spin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>
+    <svg class="order-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
   </div>
 </div>
 {% endblock %}
