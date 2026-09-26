@@ -19,14 +19,31 @@ aucune transaction réelle n'est passée.
   - *Backtest* : rejoue instantanément les 30 derniers jours du wallet.
 - Comptes utilisateurs (email + mot de passe) pour enregistrer ses simulations.
 
-## ⚠️ Les données sont simulées
+## Données : simulées par défaut, on-chain réelles avec une clé Moralis
 
-Le « track record » d'un wallet est **généré de façon déterministe à partir de son adresse**
-(`static/js/engine.js`) : même adresse → mêmes trades. Ce ne sont **pas** les vraies
-transactions du wallet. L'interface l'indique partout. Pour brancher de vraies données
-on-chain (Helius, Birdeye, Moralis, Alchemy…), remplacer `tradesBetween()` dans `engine.js`
-par un fournisseur qui renvoie les vrais trades ; le reste (simulation, PnL, graphiques)
-ne change pas.
+**Sans clé API** : les performances des wallets sont **simulées** (générées de façon déterministe
+à partir de l'adresse, `static/js/engine.js`). L'interface l'indique partout.
+
+**Avec `MORALIS_API_KEY`** : pour toute adresse collée (hors traders vedettes), CopyLab lit les
+**vrais swaps DEX** du wallet sur 30 jours (Solana + réseaux EVM : Base, Ethereum, BNB Chain,
+Arbitrum, Polygon, Optimism) via l'API Moralis, et reconstitue des trades :
+
+- un trade = un cycle achat(s) → vente(s) sur un même token, du premier achat à la sortie complète ;
+- rendement réalisé = valeur vendue / coût d'achat − 1, en dollars au moment des swaps ;
+- seuls les trades **clôturés** dans la fenêtre comptent (les positions encore ouvertes sont listées
+  sans valorisation) ; une vente sans achat connu dans la fenêtre est ignorée ; les swaps entre
+  monnaies de référence (SOL→USDC…) sont ignorés ; cycles < 5 $ ignorés ;
+- la courbe entre l'entrée et la sortie d'un trade est **interpolée** (seules l'entrée et la sortie sont réelles) ;
+- la copie rejoue ces trades réels en temps accéléré (ou instantanément) avec ton solde fictif.
+
+Garde-fous : résultats mis en cache 20 min par (wallet, réseau) dans `wallet_cache`, plafond de
+`ONCHAIN_MAX_FETCHES_PER_DAY` wallets analysés par 24 h (défaut 250, ~50 CU par page Moralis), et
+chaque simulation on-chain **fige un instantané** des trades utilisés. Si le fournisseur échoue,
+l'interface affiche l'erreur : elle ne bascule **jamais** silencieusement sur des données inventées.
+Le classement « Wallets réels analysés » liste les wallets récemment analysés (≥ 5 trades), triés
+par ROI réalisé.
+
+Les 12 « traders vedettes » restent des adresses fictives au track record simulé.
 
 ## Architecture
 
@@ -37,7 +54,8 @@ auth_utils.py     hash mot de passe, utilisateur courant, @login_required
 sim.py            pages (/traders, /trader/<wallet>, /app, /sim/<id>) + API /api/simulations
 db.py             accès PostgreSQL (psycopg 3)
 schema.sql        tables users + simulations
-static/js/engine.js   moteur de simulation déterministe (aussi testable sous Node)
+onchain.py        fournisseur Moralis, swaps → trades, cache et quota
+static/js/engine.js   moteur de simulation (trades simulés ou réels), testable sous Node
 static/js/ui.js       formats, avatars, graphiques SVG
 static/js/app.js      logique des pages
 tests/engine.test.js  tests du moteur (node tests/engine.test.js)
@@ -55,6 +73,9 @@ Variables d'environnement :
 |---|---|
 | `APP_SECRET_KEY` | signature des sessions |
 | `DATABASE_URL` (ou `POSTGRES_URL`, y compris préfixée par l'intégration Neon) | base PostgreSQL |
+| `MORALIS_API_KEY` *(optionnel)* | active les vraies données on-chain (clé gratuite sur moralis.com) |
+| `ONCHAIN_MAX_FETCHES_PER_DAY` *(optionnel, défaut 250)* | plafond de wallets analysés par 24 h |
+| `ONCHAIN_CACHE_TTL_SECONDS` *(optionnel, défaut 1200)* | durée du cache par wallet |
 
 Le schéma est créé automatiquement au premier démarrage (`db.init_db`). Les anciennes
 tables de la version GTA 6 (`news_items`, `scripts`) ne sont plus utilisées ; tu peux les

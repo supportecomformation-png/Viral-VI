@@ -124,8 +124,43 @@
     return out;
   }
 
+  // ---------- Trades réels (on-chain) ----------
+  // Un trade réel : { id, token, open, close, ret, size_usd } (entrée et sortie
+  // réelles). Les paramètres de la courbe intermédiaire (interpolée, purement
+  // illustrative) sont dérivés de l'id pour rester déterministes.
+  const decorated = new WeakMap();
+  function decorateRealTrades(list) {
+    if (!list) return null;
+    if (decorated.has(list)) return decorated.get(list);
+    const out = list.map(function (t) {
+      const r = rng('rt|' + t.id);
+      return {
+        id: t.id,
+        token: t.token,
+        open: t.open,
+        close: Math.max(t.close, t.open + 60),
+        ret: t.ret,
+        size_usd: t.size_usd,
+        gamma: 0.7 + r() * 0.7,
+        amp: 0.03 + r() * 0.09,
+        freq: 1 + Math.floor(r() * 3),
+        phase: r() * Math.PI * 2,
+      };
+    }).sort(function (a, b) {
+      return a.open - b.open;
+    });
+    decorated.set(list, out);
+    return out;
+  }
+
   // Trades ouverts dans [t0, t1] (secondes epoch), triés par ouverture.
-  function tradesBetween(wallet, t0, t1) {
+  // Si "real" est fourni (trades décorés), on l'utilise à la place du générateur simulé.
+  function tradesBetween(wallet, t0, t1, real) {
+    if (real) {
+      return real.filter(function (t) {
+        return t.open >= t0 && t.open <= t1;
+      });
+    }
     const profile = profileFor(wallet);
     const out = [];
     for (let d = Math.floor(t0 / DAY); d <= Math.floor(t1 / DAY); d++) {
@@ -164,7 +199,7 @@
     const fee = opts.feePct == null ? FEE_PCT : opts.feePct;
     const nSamples = opts.samples || 80;
 
-    const trades = tradesBetween(wallet, startSim, endSim);
+    const trades = tradesBetween(wallet, startSim, endSim, opts.trades);
     const events = [];
     trades.forEach(function (t) {
       events.push({ time: t.open, type: "open", trade: t });
@@ -278,8 +313,10 @@
   }
 
   // Stats "du trader" sur les `days` derniers jours avant `now` (sans frais).
-  function traderStats(wallet, now, days) {
+  // `realTrades` : liste de trades on-chain bruts (sinon track record simulé).
+  function traderStats(wallet, now, days, realTrades) {
     const sim = simulate(wallet, {
+      trades: decorateRealTrades(realTrades),
       startSim: now - days * DAY,
       endSim: now,
       balance: 10000,
@@ -305,26 +342,48 @@
    * nowReal: horloge serveur estimée (secondes)
    */
   function evaluateSimulation(sim, nowReal) {
-    let startSim, endSim, status = "active", progress = null;
+    // Données on-chain : la simulation rejoue la fenêtre réelle figée dans
+    // `sim.snapshot` (trades réels), de son début à sa fin.
+    // Données simulées : "live" part de l'instant de lancement et court vers le
+    // futur (jusqu'à 90 jours simulés) ; "backtest" rejoue les 30 derniers jours.
+    const snap = sim.source === "onchain" && sim.snapshot ? sim.snapshot : null;
+    const real = snap ? decorateRealTrades(snap.trades) : null;
+    let winStart, winEnd, horizonDays;
+    if (snap) {
+      // On saute le temps mort du début : le rejeu démarre 1 h avant le premier trade réel.
+      const firstOpen = real.length ? real[0].open : snap.window_start;
+      winStart = Math.max(snap.window_start, firstOpen - 3600);
+      winEnd = snap.window_end;
+      horizonDays = (winEnd - winStart) / DAY;
+    } else if (sim.mode === "backtest") {
+      winStart = sim.started_at - HISTORY_DAYS * DAY;
+      winEnd = sim.started_at;
+      horizonDays = HISTORY_DAYS;
+    } else {
+      winStart = sim.started_at;
+      winEnd = sim.started_at + MAX_SIM_DAYS * DAY;
+      horizonDays = MAX_SIM_DAYS;
+    }
+
+    let endSim, status = "active", progress = null;
     if (sim.mode === "backtest") {
-      startSim = sim.started_at - HISTORY_DAYS * DAY;
-      endSim = sim.started_at;
+      endSim = winEnd;
       status = "finished";
     } else {
       const stopAt = sim.stopped_at != null ? sim.stopped_at : nowReal;
       const elapsedReal = Math.max(0, stopAt - sim.started_at);
-      startSim = sim.started_at;
-      const cap = startSim + MAX_SIM_DAYS * DAY;
-      endSim = startSim + elapsedReal * sim.speed;
-      if (endSim >= cap) {
-        endSim = cap;
+      endSim = winStart + elapsedReal * sim.speed;
+      if (endSim >= winEnd) {
+        endSim = winEnd;
         status = "finished";
       }
-      if (sim.stopped_at != null) status = "stopped";
-      progress = (endSim - startSim) / (MAX_SIM_DAYS * DAY);
+      if (sim.stopped_at != null && status !== "finished") status = "stopped";
+      progress = (endSim - winStart) / (winEnd - winStart);
     }
+
     const res = simulate(sim.wallet, {
-      startSim: startSim,
+      trades: real,
+      startSim: winStart,
       endSim: endSim,
       balance: sim.balance,
       allocPct: sim.alloc_pct,
@@ -332,7 +391,9 @@
     });
     res.status = status;
     res.progress = progress;
-    res.simDays = (endSim - startSim) / DAY;
+    res.simDays = (endSim - winStart) / DAY;
+    res.horizonDays = horizonDays;
+    res.source = snap ? "onchain" : "simulated";
     return res;
   }
 
@@ -346,6 +407,7 @@
     walletKey: walletKey,
     profileFor: profileFor,
     tradesBetween: tradesBetween,
+    decorateRealTrades: decorateRealTrades,
     multiplier: multiplier,
     simulate: simulate,
     traderStats: traderStats,

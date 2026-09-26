@@ -34,4 +34,24 @@ CREATE TABLE IF NOT EXISTS simulations (
     created_at TEXT NOT NULL DEFAULT to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
 );
 
+-- Données on-chain : `source` vaut 'simulated' (track record généré) ou 'onchain'
+-- (vrais swaps du wallet). Pour 'onchain', `snapshot` fige les trades utilisés au
+-- lancement, pour que la simulation reste identique dans le temps.
+ALTER TABLE simulations ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'simulated';
+ALTER TABLE simulations ADD COLUMN IF NOT EXISTS network TEXT;
+ALTER TABLE simulations ADD COLUMN IF NOT EXISTS snapshot TEXT;
+
 CREATE INDEX IF NOT EXISTS idx_simulations_user ON simulations(user_id, id DESC);
+
+-- Cache des trades on-chain par (wallet, réseau) : économise les appels au
+-- fournisseur (quota) et alimente le classement des wallets réels analysés.
+CREATE TABLE IF NOT EXISTS wallet_cache (
+    id SERIAL PRIMARY KEY,
+    wallet TEXT NOT NULL,
+    network TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    fetched_at DOUBLE PRECISION NOT NULL,
+    UNIQUE (wallet, network)
+);
+
+CREATE INDEX IF NOT EXISTS idx_wallet_cache_time ON wallet_cache(fetched_at DESC);

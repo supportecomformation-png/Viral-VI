@@ -32,7 +32,7 @@
   </header>
 
   <div class="demo-banner">
-    <span class="dot"></span> Mode démo · argent fictif · aucune donnée on-chain réelle
+    <span class="dot"></span> Mode démo · argent fictif · {% if onchain_enabled %}aucun dépôt possible{% else %}aucune donnée on-chain réelle{% endif %}
   </div>
 
   <main>
@@ -52,9 +52,11 @@
   <footer class="site-footer">
     <div class="container">
       <p>
-        CopyLab est un simulateur pédagogique. Aucun dépôt n'est possible, aucun vrai argent ne transite
-        sur ce site, et les performances affichées sont <strong>simulées</strong> (elles ne reflètent pas les
-        transactions réelles d'un wallet). Ce n'est pas un conseil en investissement. Le trading de
+        CopyLab est un simulateur pédagogique. Aucun dépôt n'est possible et aucun vrai argent ne transite
+        sur ce site. {% if onchain_enabled %}Les wallets vedettes sont <strong>simulés</strong> ; pour les autres adresses,
+        les trades sont lus on-chain (swaps DEX, via Moralis) et le PnL réalisé est une <strong>estimation</strong>
+        en dollars : elle peut différer de la réalité (frais, transferts, airdrops, positions non clôturées).{% else %}Les performances affichées sont <strong>simulées</strong> (elles ne reflètent pas les
+        transactions réelles d'un wallet).{% endif %} Ce n'est pas un conseil en investissement. Le trading de
         cryptomonnaies comporte un risque élevé de perte en capital.
       </p>
       <p class="footer-meta">© {{ current_year }} CopyLab</p>

@@ -128,4 +128,82 @@ test("distribution réaliste : la plupart des wallets aléatoires ne sont pas de
   assert.ok(pos / N > 0.1, "pas assez de wallets rentables: " + pos / N);
 });
 
+// ---------------------------------------------------------------- trades on-chain réels
+const T0 = 1789000000;
+const REAL = [
+  { id: "a-1", token: "AAA", open: T0 + 3600, close: T0 + 7200, ret: 0.5, size_usd: 500 },
+  { id: "b-2", token: "BBB", open: T0 + 3 * DAY, close: T0 + 3 * DAY + 7200, ret: -0.2, size_usd: 300 },
+  { id: "c-3", token: "CCC", open: T0 + 5 * DAY, close: T0 + 5 * DAY + 600, ret: 1.0, size_usd: 100 },
+];
+
+test("trades réels : rendement réalisé exact à la clôture (sans frais, 100 % engagé)", () => {
+  const dec = E.decorateRealTrades(REAL);
+  const r = E.simulate("anywallet", { trades: dec, startSim: T0, endSim: T0 + 2 * DAY, balance: 1000, allocPct: 1, feePct: 0 });
+  assert.strictEqual(r.tradesCount, 1);
+  assert.ok(Math.abs(r.equity - 1500) < 1e-6, "équité " + r.equity);
+  const r2 = E.simulate("anywallet", { trades: dec, startSim: T0, endSim: T0 + 4 * DAY, balance: 1000, allocPct: 1, feePct: 0 });
+  assert.ok(Math.abs(r2.equity - 1500 * 0.8) < 1e-6, "équité " + r2.equity);
+});
+
+test("trades réels : la courbe intermédiaire relie l'entrée à la sortie", () => {
+  const dec = E.decorateRealTrades(REAL);
+  dec.forEach((t) => {
+    assert.ok(Math.abs(E.multiplier(t, t.open) - 1) < 1e-9);
+    assert.ok(Math.abs(E.multiplier(t, t.close) - (1 + t.ret)) < 1e-9);
+  });
+  assert.strictEqual(E.decorateRealTrades(REAL), dec, "décoration mémoïsée");
+});
+
+test("trades réels : traderStats", () => {
+  const s = E.traderStats("anywallet", T0 + 6 * DAY, 30, REAL);
+  assert.strictEqual(s.winRate, 2 / 3);
+  assert.strictEqual(s.trades, 3);
+  assert.ok(s.pnlPct > 0);
+  const s2 = E.traderStats("anywallet", T0 + 6 * DAY, 2, REAL); // seulement le trade c-3 (ouvert à J+5)
+  assert.strictEqual(s2.trades, 1);
+});
+
+test("évaluation on-chain : rejeu accéléré de la fenêtre réelle puis fin", () => {
+  const snap = { window_start: T0, window_end: T0 + 6 * DAY, trades: REAL };
+  const sim = { wallet: "w", mode: "live", source: "onchain", snapshot: snap, balance: 10000, alloc_pct: 0.5, speed: 6000, started_at: 5000000, stopped_at: null };
+  const a = E.evaluateSimulation(sim, sim.started_at);
+  assert.strictEqual(a.status, "active");
+  assert.strictEqual(a.equity, 10000);
+  assert.strictEqual(a.source, "onchain");
+  assert.ok(Math.abs(a.horizonDays - 6) < 1e-9);
+  const mid = E.evaluateSimulation(sim, sim.started_at + 3 * DAY / 6000); // 3 jours simulés écoulés
+  assert.strictEqual(mid.status, "active");
+  assert.ok(Math.abs(mid.simDays - 3) < 1e-9);
+  assert.ok(Math.abs(mid.progress - 0.5) < 1e-9);
+  assert.ok(mid.tradesCount >= 1);
+  const end = E.evaluateSimulation(sim, sim.started_at + 99999);
+  assert.strictEqual(end.status, "finished");
+  assert.ok(Math.abs(end.simDays - 6) < 1e-9);
+  assert.strictEqual(end.tradesCount, 3);
+  const stopped = E.evaluateSimulation(Object.assign({}, sim, { stopped_at: sim.started_at + 3 * DAY / 6000 }), sim.started_at + 99999);
+  assert.strictEqual(stopped.status, "stopped");
+  assert.ok(Math.abs(stopped.equity - mid.equity) < 1e-9);
+});
+
+test("évaluation on-chain : le rejeu saute le temps mort avant le premier trade", () => {
+  const late = REAL.map((t) => Object.assign({}, t, { open: t.open + 2 * DAY, close: t.close + 2 * DAY }));
+  const snap = { window_start: T0, window_end: T0 + 8 * DAY, trades: late };
+  const sim = { wallet: "w", mode: "live", source: "onchain", snapshot: snap, balance: 10000, alloc_pct: 0.5, speed: 6000, started_at: 5000000, stopped_at: null };
+  const a = E.evaluateSimulation(sim, sim.started_at);
+  assert.ok(Math.abs(a.horizonDays - (8 - 2 - 3600 / DAY + 3600 / DAY)) < 1e-6 || a.horizonDays < 8, "horizon " + a.horizonDays);
+  assert.ok(a.horizonDays < 6.1);
+  const soon = E.evaluateSimulation(sim, sim.started_at + 2 * 3600 / 6000 + 1);
+  assert.strictEqual(soon.open.length + soon.tradesCount >= 1, true);
+});
+
+test("évaluation on-chain : backtest instantané, insensible à l'horloge", () => {
+  const snap = { window_start: T0, window_end: T0 + 6 * DAY, trades: REAL };
+  const sim = { wallet: "w", mode: "backtest", source: "onchain", snapshot: snap, balance: 10000, alloc_pct: 0.25, speed: 300, started_at: 5000000, stopped_at: null };
+  const a = E.evaluateSimulation(sim, 5000000);
+  const b = E.evaluateSimulation(sim, 9999999);
+  assert.strictEqual(a.status, "finished");
+  assert.strictEqual(a.equity, b.equity);
+  assert.strictEqual(a.tradesCount, 3);
+});
+
 console.log(passed + " tests OK");

@@ -14,7 +14,8 @@
           "db.py",
           "auth.py",
           "auth_utils.py",
-          "sim.py"
+          "sim.py",
+          "onchain.py"
         ]
       }
     }

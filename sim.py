@@ -7,11 +7,13 @@ static/js/engine.js). Le serveur ne stocke que les paramètres d'une
 simulation ; l'état est recalculé côté client, de façon déterministe.
 """
 
+import json
 import re
 import time
 
-from flask import Blueprint, render_template, request, jsonify, g, redirect, url_for, flash, abort
+from flask import Blueprint, render_template, request, jsonify, g, redirect, url_for, flash, abort, current_app
 
+import onchain
 from auth_utils import login_required
 from db import query_all, query_one, execute
 
@@ -24,6 +26,7 @@ ALLOWED_BALANCES = (1000, 10000, 100000)
 ALLOWED_ALLOC = (0.05, 0.1, 0.25, 0.5)
 ALLOWED_SPEEDS = (300, 1200, 6000)
 ALLOWED_MODES = ("live", "backtest")
+ALLOWED_SOURCES = ("simulated", "onchain")
 MAX_SIMULATIONS_PER_USER = 30
 
 # Traders "vedettes" de la démo : des adresses fictives dont le track record
@@ -75,8 +78,33 @@ def _error(code, message, status):
     return jsonify({"error": code, "message": message}), status
 
 
+def _onchain_enabled():
+    return bool(current_app.config.get("MORALIS_API_KEY"))
+
+
+def _payload_for(wallet, chain, network, max_age):
+    """Trades on-chain d'un wallet : cache si assez récent, sinon appel au fournisseur."""
+    payload = onchain.cached_payload(wallet, network, max_age)
+    if payload is not None:
+        return payload
+    if onchain.fetches_last_24h() >= current_app.config["ONCHAIN_MAX_FETCHES_PER_DAY"]:
+        raise onchain.ProviderError(
+            "budget", "Le quota quotidien d'analyses de wallets est atteint. Réessaie demain.", 429
+        )
+    payload = onchain.get_wallet_trades(wallet, chain, network, current_app.config["MORALIS_API_KEY"])
+    onchain.store_payload(wallet, network, payload)
+    return payload
+
+
 def _serialize(row):
     trader = TRADERS_BY_WALLET.get(row["wallet"])
+    source = row.get("source") or "simulated"
+    snapshot = None
+    if source == "onchain" and row.get("snapshot"):
+        try:
+            snapshot = json.loads(row["snapshot"])
+        except ValueError:
+            snapshot = None
     return {
         "id": row["id"],
         "wallet": row["wallet"],
@@ -88,6 +116,9 @@ def _serialize(row):
         "started_at": float(row["started_at"]),
         "stopped_at": float(row["stopped_at"]) if row["stopped_at"] is not None else None,
         "handle": trader["handle"] if trader else None,
+        "source": source,
+        "network": row.get("network"),
+        "snapshot": snapshot,
     }
 
 
@@ -101,7 +132,7 @@ def _owned_simulation(sim_id):
 
 @bp.route("/traders")
 def traders():
-    return render_template("traders.html", traders=DEMO_TRADERS)
+    return render_template("traders.html", traders=DEMO_TRADERS, onchain_enabled=_onchain_enabled())
 
 
 @bp.route("/trader/<path:wallet>")
@@ -116,6 +147,9 @@ def trader(wallet):
         wallet=wallet,
         chain=chain,
         featured=TRADERS_BY_WALLET.get(wallet),
+        onchain=_onchain_enabled() and wallet not in TRADERS_BY_WALLET,
+        networks=onchain.EVM_NETWORKS,
+        default_network=onchain.network_for(chain, request.args.get("network")),
     )
 
 
@@ -134,6 +168,50 @@ def simulation_page(sim_id):
 
 
 # ------------------------------------------------------------------ API
+
+@bp.route("/api/wallet/<path:wallet>/trades")
+def wallet_trades(wallet):
+    """Trades on-chain réels d'un wallet (30 jours), ou `source: simulated` si indisponible."""
+    chain = detect_chain(wallet)
+    if chain is None:
+        return _error("invalid_wallet", "Adresse de wallet invalide (Solana ou EVM 0x…).", 400)
+    wallet = normalize_wallet(wallet, chain)
+    if wallet in TRADERS_BY_WALLET:
+        return jsonify(source="simulated", reason="featured")
+    if not _onchain_enabled():
+        return jsonify(source="simulated", reason="no_api_key")
+    network = onchain.network_for(chain, request.args.get("network"))
+    try:
+        data = _payload_for(wallet, chain, network, current_app.config["ONCHAIN_CACHE_TTL_SECONDS"])
+    except onchain.ProviderError as exc:
+        return _error(exc.code, exc.message, exc.status)
+    return jsonify(data)
+
+
+@bp.route("/api/wallets/leaderboard")
+def wallets_leaderboard():
+    """Wallets réels récemment analysés, classés par rendement réalisé sur 30 jours."""
+    if not _onchain_enabled():
+        return jsonify(wallets=[])
+    rows = []
+    for wallet, network, data in onchain.recent_payloads():
+        stats = data.get("stats") or {}
+        if data.get("source") != "onchain" or (stats.get("trades") or 0) < 5 or stats.get("roi") is None:
+            continue
+        rows.append({
+            "wallet": wallet,
+            "network": network,
+            "chain": data.get("chain"),
+            "roi": stats["roi"],
+            "win_rate": stats.get("win_rate"),
+            "trades": stats["trades"],
+            "pnl_usd": stats.get("pnl_usd"),
+            "curve": stats.get("curve") or [],
+            "fetched_at": data.get("fetched_at"),
+        })
+    rows.sort(key=lambda r: -r["roi"])
+    return jsonify(wallets=rows[:20])
+
 
 @bp.route("/api/simulations", methods=["GET"])
 @login_required
@@ -184,11 +262,34 @@ def create_simulation():
             409,
         )
 
+    source = payload.get("source", "simulated")
+    if source not in ALLOWED_SOURCES:
+        return _error("invalid_params", "Paramètres de simulation invalides.", 400)
+
+    network = None
+    snapshot = None
+    if source == "onchain":
+        if wallet in TRADERS_BY_WALLET or not _onchain_enabled():
+            return _error("onchain_unavailable", "Les données on-chain ne sont pas disponibles pour ce wallet.", 400)
+        network = onchain.network_for(chain, payload.get("network"))
+        try:
+            data = _payload_for(wallet, chain, network, current_app.config["ONCHAIN_CACHE_TTL_SECONDS"])
+        except onchain.ProviderError as exc:
+            return _error(exc.code, exc.message, exc.status)
+        if not data.get("trades"):
+            return _error(
+                "no_trades",
+                "Aucun trade clôturé sur les 30 derniers jours pour ce wallet : rien à copier.",
+                400,
+            )
+        # Instantané des trades : la simulation reste identique même si le cache change.
+        snapshot = json.dumps(data, separators=(",", ":"))
+
     sim_id = execute(
         """INSERT INTO simulations
-           (user_id, wallet, chain, mode, balance, alloc_pct, speed, started_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-        (g.user["id"], wallet, chain, mode, balance, alloc_pct, speed, time.time()),
+           (user_id, wallet, chain, mode, balance, alloc_pct, speed, started_at, source, network, snapshot)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (g.user["id"], wallet, chain, mode, balance, alloc_pct, speed, time.time(), source, network, snapshot),
     )
     row = _owned_simulation(sim_id)
     return jsonify(simulation=_serialize(row), server_now=time.time()), 201

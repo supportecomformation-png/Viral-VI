@@ -28,6 +28,7 @@ def create_app(config_class=Config):
         return {
             "current_user": g.get("user"),
             "current_year": date.today().year,
+            "onchain_enabled": bool(app.config.get("MORALIS_API_KEY")),
         }
 
     @app.route("/")

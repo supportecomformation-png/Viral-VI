@@ -48,3 +48,9 @@ class Config:
         DATABASE_URL = "postgresql://" + DATABASE_URL[len("postgres://"):]
 
     PERMANENT_SESSION_LIFETIME = timedelta(days=30)
+
+    # Données on-chain réelles (Moralis). Sans clé : l'app reste en mode simulé.
+    MORALIS_API_KEY = os.environ.get("MORALIS_API_KEY", "").strip()
+    ONCHAIN_CACHE_TTL_SECONDS = int(os.environ.get("ONCHAIN_CACHE_TTL_SECONDS", "1200"))
+    # Garde-fou de quota : nombre maximal de wallets interrogés par 24 h.
+    ONCHAIN_MAX_FETCHES_PER_DAY = int(os.environ.get("ONCHAIN_MAX_FETCHES_PER_DAY", "250"))

@@ -4,7 +4,7 @@
 {% block content %}
 <section class="container page-head">
   <h1>Meilleurs traders</h1>
-  <p>Wallets d'exemple, performances simulées. Copie-en un pour lancer une simulation.</p>
+  <p>{% if onchain_enabled %}Colle n'importe quelle adresse : ses vrais trades on-chain sont analysés. Les wallets vedettes ci-dessous sont des exemples simulés.{% else %}Wallets d'exemple, performances simulées. Copie-en un pour lancer une simulation.{% endif %}</p>
 
   <form class="paste-form" autocomplete="off" novalidate>
     <input type="text" class="paste-input" placeholder="Colle une adresse de wallet (Solana ou 0x…)" aria-label="Adresse du wallet" spellcheck="false">
@@ -13,7 +13,19 @@
   <p class="paste-error" hidden></p>
 </section>
 
+{% if onchain_enabled %}
+<section class="container" id="real-section">
+  <div class="section-head">
+    <h2>Wallets réels analysés</h2>
+    <span class="pill pill-sm">On-chain</span>
+  </div>
+  <p class="fine">Classés par rendement réalisé sur 30 jours (trades clôturés). Un wallet apparaît ici dès que quelqu'un l'a analysé et qu'il a au moins 5 trades.</p>
+  <div class="trader-list" id="real-list"><p class="empty-note">Chargement…</p></div>
+</section>
+{% endif %}
+
 <section class="container">
+  {% if onchain_enabled %}<div class="section-head"><h2>Traders vedettes</h2><span class="pill pill-sm pill-muted">Simulés</span></div>{% endif %}
   <div class="toolbar">
     <div class="seg" id="period-seg" role="tablist" aria-label="Période">
       <button type="button" data-period="7">7J</button>

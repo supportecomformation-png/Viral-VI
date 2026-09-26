@@ -257,6 +257,22 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
   border: 1px solid rgba(255, 181, 71, 0.2); padding: 10px 14px; border-radius: var(--radius-sm);
 }
 .sim-notice strong { color: var(--warn); }
+.sim-notice.real { color: var(--muted); background: rgba(34, 227, 154, 0.06); border-color: rgba(34, 227, 154, 0.22); }
+.sim-notice.real strong { color: var(--up); }
+
+.net-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 14px; }
+.net-row .field-label { margin: 0; }
+.seg-wrap { flex-wrap: wrap; border-radius: 16px; }
+.state-card { text-align: center; padding: 34px 20px; }
+.state-msg { margin: 0 0 14px; color: var(--muted); }
+.spinner {
+  display: inline-block; width: 16px; height: 16px; margin-right: 8px; vertical-align: -3px;
+  border: 2px solid rgba(255, 255, 255, 0.15); border-top-color: var(--up); border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.pill-muted { color: var(--muted); background: rgba(255, 255, 255, 0.06); border-color: var(--border-strong); }
+.section-head .pill { align-self: center; }
 
 .trader-grid, .sim-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; padding-top: 6px; padding-bottom: 40px; align-items: start; }
 .copy-panel, .sim-side { position: sticky; top: 76px; }

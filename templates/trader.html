@@ -6,6 +6,8 @@
          id="trader-root"
          data-wallet="{{ wallet }}"
          data-chain="{{ chain }}"
+         data-onchain="{{ '1' if onchain else '0' }}"
+         data-network="{{ default_network }}"
          data-logged-in="{{ '1' if current_user else '0' }}">
   <div class="trader-id">
     <span class="avatar avatar-lg" data-avatar="{{ wallet }}"></span>
@@ -19,14 +21,28 @@
       {% if featured %}<p class="trader-bio">{{ featured.bio }}</p>{% endif %}
     </div>
   </div>
-  <p class="sim-notice">
-    Track record <strong>simulé</strong> : généré à partir de l'adresse, ce ne sont pas les vraies
-    transactions de ce wallet.
+  <p class="sim-notice" id="data-notice">
+    {% if onchain %}Chargement des données on-chain…{% else %}Track record <strong>simulé</strong> : généré à partir de l'adresse, ce ne sont pas les vraies
+    transactions de ce wallet.{% endif %}
   </p>
 </section>
 
 <section class="container trader-grid">
   <div class="trader-main">
+    {% if onchain and chain == 'evm' %}
+    <div class="net-row">
+      <span class="field-label">Réseau</span>
+      <div class="seg seg-wrap" id="network-seg" role="tablist" aria-label="Réseau EVM">
+        {% for key, label in networks.items() %}
+          <button type="button" data-network="{{ key }}"{% if key == default_network %} class="active"{% endif %}>{{ label }}</button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div id="trader-state" class="card state-card" hidden></div>
+
+    <div id="trader-content">
     <div class="stat-row" id="trader-stats"></div>
 
     <div class="card">
@@ -43,11 +59,13 @@
     <div class="card">
       <h3>Positions ouvertes</h3>
       <div class="table-scroll"><table class="tbl" id="open-table"></table></div>
+      <p class="fine" id="open-note" hidden>Positions encore détenues, non valorisées (pas de prix en temps réel).</p>
     </div>
 
     <div class="card">
       <h3>Derniers trades</h3>
       <div class="table-scroll"><table class="tbl" id="closed-table"></table></div>
+    </div>
     </div>
   </div>
 
