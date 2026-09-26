@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="{% block viewport %}width=device-width, initial-scale=1, viewport-fit=cover{% endblock %}">
   <meta name="theme-color" content="#07090c">
-  <title>{% block title %}CopyLab — Copy trading démo{% endblock %}</title>
+  <title>{% block title %}Copy Trade — Copy trading démo{% endblock %}</title>
   <meta name="description" content="Apprends le copy trading sans risque : colle l'adresse d'un wallet et lance une simulation avec de l'argent fictif.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,8 +15,8 @@
   <header class="site-header">
     <div class="container header-inner">
       <a href="{{ url_for('landing') }}" class="brand">
-        <span class="brand-mark">C</span>
-        <span class="brand-name">CopyLab</span>
+        <span class="brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l5-5 4 4 7-8M15 8h5v5"/></svg></span>
+        <span class="brand-name">Copy Trade</span>
       </a>
       <nav class="main-nav">
         <a href="{{ url_for('landing') }}">Accueil</a>
@@ -49,14 +49,14 @@
   <footer class="site-footer">
     <div class="container">
       <p>
-        CopyLab est un simulateur pédagogique. Aucun dépôt n'est possible et aucun vrai argent ne transite
+        Copy Trade est un simulateur pédagogique. Aucun dépôt n'est possible et aucun vrai argent ne transite
         sur ce site. {% if onchain_enabled %}Les wallets vedettes sont <strong>simulés</strong> ; pour les autres adresses,
         les trades sont lus on-chain (swaps DEX, via Moralis) et le PnL réalisé est une <strong>estimation</strong>
         en dollars : elle peut différer de la réalité (frais, transferts, airdrops, positions non clôturées).{% else %}Les performances affichées sont <strong>simulées</strong> (elles ne reflètent pas les
         transactions réelles d'un wallet).{% endif %} Ce n'est pas un conseil en investissement. Le trading de
         cryptomonnaies comporte un risque élevé de perte en capital.
       </p>
-      <p class="footer-meta">© {{ current_year }} CopyLab</p>
+      <p class="footer-meta">© {{ current_year }} Copy Trade</p>
     </div>
   </footer>
 

@@ -81,8 +81,9 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .brand:hover { text-decoration: none; }
 .brand-mark {
   display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px;
-  background: var(--grad); color: #04110b; font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+  background: #fff; color: #000;
 }
+.brand-mark svg { width: 20px; height: 20px; fill: none; stroke: #000; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .brand-name { font-size: 1.2rem; margin: 0; }
 .main-nav { display: flex; align-items: center; gap: 18px; }
 .main-nav a { color: var(--muted); font-weight: 600; font-size: 0.92rem; }
