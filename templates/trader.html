@@ -28,14 +28,8 @@
     </div>
   </div>
 
-  <p class="sim-notice" id="data-notice">
-    {% if onchain %}Chargement des données on-chain…{% else %}Track record <strong>simulé</strong> : généré à partir de l'adresse, ce ne sont pas les vraies
-    transactions de ce wallet.{% endif %}
-  </p>
-
   {% if onchain and chain == 'evm' %}
   <div class="net-row">
-    <span class="field-label">Réseau</span>
     <div class="seg seg-wrap" id="network-seg" role="tablist" aria-label="Réseau EVM">
       {% for key, label in networks.items() %}
         <button type="button" data-network="{{ key }}"{% if key == default_network %} class="active"{% endif %}>{{ label }}</button>
@@ -49,7 +43,7 @@
   <div id="copy-pad">
     <div class="amount-block">
       <div class="amount-display zero" id="amount-display" aria-live="polite">0 $</div>
-      <div class="amount-sub">Montant à investir (argent fictif)</div>
+      <div class="amount-sub">Montant à investir</div>
     </div>
 
     <div class="quick-amounts" id="quick-amounts">
@@ -78,41 +72,6 @@
 
     <button type="button" class="btn btn-primary btn-block btn-lg" id="start-sim" disabled>Entre un montant</button>
     <p class="form-error" id="start-error" hidden></p>
-    <p class="fine cs-fine">
-      Argent fictif : aucun vrai fonds n'est utilisé. Frais et slippage simulés : 0,8&nbsp;% par achat et par vente.
-      Les performances passées ne préjugent pas des performances futures.
-    </p>
   </div>
-</section>
-
-<section class="container details" id="trader-content">
-  <h2 class="details-title">Performance du wallet</h2>
-  <div class="stat-row" id="trader-stats"></div>
-
-  <div class="card">
-    <div class="card-head">
-      <h3>Performance</h3>
-      <div class="seg" id="chart-seg">
-        <button type="button" data-period="7">7J</button>
-        <button type="button" data-period="30" class="active">30J</button>
-      </div>
-    </div>
-    <div class="chart" id="trader-chart"></div>
-  </div>
-
-  <div class="card">
-    <h3>Positions ouvertes</h3>
-    <div class="table-scroll"><table class="tbl" id="open-table"></table></div>
-    <p class="fine" id="open-note" hidden>Positions encore détenues, non valorisées (pas de prix en temps réel).</p>
-  </div>
-
-  <div class="card">
-    <h3>Derniers trades</h3>
-    <div class="table-scroll"><table class="tbl" id="closed-table"></table></div>
-  </div>
-
-  <p class="center-cta">
-    <button type="button" class="icon-btn" id="copy-addr" data-value="{{ wallet }}" aria-label="Copier l'adresse">Copier l'adresse du wallet</button>
-  </p>
 </section>
 {% endblock %}

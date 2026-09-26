@@ -414,9 +414,6 @@
     return '<div class="stat"><small>' + label + '</small><b class="' + (klass || "") + '">' + value + "</b></div>";
   }
 
-  const SIM_NOTICE_HTML =
-    "Track record <strong>simulé</strong> : généré à partir de l'adresse, ce ne sont pas les vraies transactions de ce wallet.";
-
   function initTrader() {
     const root = document.getElementById("trader-root");
     const wallet = root.getAttribute("data-wallet");
@@ -427,22 +424,12 @@
     U.applyAvatars(document);
 
     const el = function (id) { return document.getElementById(id); };
-    const noticeEl = el("data-notice");
     const stateEl = el("trader-state");
-    const contentEl = el("trader-content");
     const padEl = el("copy-pad");
     const startBtn = el("start-sim");
     const errEl = el("start-error");
     const perfEl = el("cs-perf-value");
     const displayEl = el("amount-display");
-
-    const copyBtn = el("copy-addr");
-    copyBtn.addEventListener("click", function () {
-      U.copyText(copyBtn.getAttribute("data-value")).then(function () {
-        copyBtn.textContent = "Adresse copiée";
-        setTimeout(function () { copyBtn.textContent = "Copier l'adresse du wallet"; }, 1500);
-      });
-    });
 
     // Source de données courante : "simulated" ou "onchain" (charge utile Moralis).
     let dataSource = "simulated";
@@ -491,7 +478,7 @@
       } else if (key === ".") {
         if (raw.indexOf(".") === -1) raw = (raw || "0") + ".";
       } else {
-        let next = raw === "0" ? key : raw + key;
+        const next = raw === "0" ? key : raw + key;
         const parts = next.split(".");
         if (parts.length > 1 && parts[1].length > 2) return;
         if (parts[0].length > 7 || parseFloat(next) > MAX_AMOUNT) return;
@@ -527,14 +514,16 @@
       sessionStorage.removeItem(PENDING_KEY);
     } catch (e) {}
 
-    // ----- affichage
-    function setNotice(html, klass) {
-      noticeEl.className = "sim-notice" + (klass ? " " + klass : "");
-      noticeEl.innerHTML = html;
+    // ----- performance du wallet (résumé en haut à droite)
+    function showPerf() {
+      const real = dataSource === "onchain" ? payload.trades : null;
+      const now = dataSource === "onchain" ? payload.window_end : nowSec();
+      const s30 = E.traderStats(wallet, now, 30, real);
+      perfEl.textContent = U.pct(s30.pnlPct, Math.abs(s30.pnlPct) >= 10 ? 0 : 1);
+      perfEl.className = U.cls(s30.pnlPct);
     }
 
     function showState(html, withRetry) {
-      contentEl.hidden = true;
       padEl.hidden = true;
       stateEl.hidden = false;
       perfEl.textContent = "—";
@@ -545,86 +534,10 @@
       if (retry) retry.addEventListener("click", load);
     }
 
-    function render() {
-      stateEl.hidden = true;
-      padEl.hidden = false;
-      contentEl.hidden = false;
-      const real = dataSource === "onchain" ? payload.trades : null;
-      const now = dataSource === "onchain" ? payload.window_end : nowSec();
-      const s7 = E.traderStats(wallet, now, 7, real);
-      const s30 = E.traderStats(wallet, now, 30, real);
-
-      perfEl.textContent = U.pct(s30.pnlPct, Math.abs(s30.pnlPct) >= 10 ? 0 : 1);
-      perfEl.className = U.cls(s30.pnlPct);
-
-      el("trader-stats").innerHTML =
-        statCard("PnL 7J", U.pct(s7.pnlPct, Math.abs(s7.pnlPct) >= 10 ? 0 : 1), U.cls(s7.pnlPct)) +
-        statCard("PnL 30J", U.pct(s30.pnlPct, Math.abs(s30.pnlPct) >= 10 ? 0 : 1), U.cls(s30.pnlPct)) +
-        statCard("Win rate 30J", s30.winRate == null ? "—" : Math.round(s30.winRate * 100) + " %") +
-        statCard("Trades 30J", String(s30.trades));
-
-      const chartEl = el("trader-chart");
-      const drawChart = function (days) {
-        U.lineChart(chartEl, (days === 7 ? s7 : s30).curve, { base: 10000 });
-      };
-      const activeSeg = el("chart-seg").querySelector("button.active");
-      drawChart(activeSeg ? parseInt(activeSeg.getAttribute("data-period"), 10) : 30);
-      el("chart-seg").onclick = function (e) {
-        const btn = e.target.closest("button");
-        if (!btn) return;
-        this.querySelectorAll("button").forEach(function (b) { b.classList.remove("active"); });
-        btn.classList.add("active");
-        drawChart(parseInt(btn.getAttribute("data-period"), 10));
-      };
-
-      // Positions ouvertes
-      if (dataSource === "onchain") {
-        const rows = (payload.open_positions || []).map(function (p) {
-          return "<tr><td><b>$" + U.esc(p.token) + "</b></td><td>" + U.timeAgo(p.open, now) + "</td><td>" +
-            U.usd(p.cost_usd) + "</td></tr>";
-        }).join("");
-        el("open-table").innerHTML =
-          "<thead><tr><th>Token</th><th>Ouverte</th><th>Coût d'entrée</th></tr></thead><tbody>" +
-          (rows || '<tr><td colspan="3" class="empty-note">Aucune position ouverte détectée.</td></tr>') + "</tbody>";
-        el("open-note").hidden = false;
-      } else {
-        const rows = s30.open.map(function (p) {
-          return "<tr><td><b>$" + U.esc(p.token) + "</b></td><td>" + U.timeAgo(p.openTime, now) +
-            '</td><td class="' + U.cls(p.pnlPct) + '">' + U.pct(p.pnlPct) + "</td></tr>";
-        }).join("");
-        el("open-table").innerHTML =
-          "<thead><tr><th>Token</th><th>Ouverte</th><th>PnL</th></tr></thead><tbody>" +
-          (rows || '<tr><td colspan="3" class="empty-note">Aucune position ouverte.</td></tr>') + "</tbody>";
-        el("open-note").hidden = true;
-      }
-
-      // Derniers trades clôturés
-      const sizeById = {};
-      if (real) real.forEach(function (t) { sizeById[t.id] = t.size_usd; });
-      const closedRows = s30.closed.slice(-10).reverse().map(function (c) {
-        const size = real ? "<td>" + U.usd(sizeById[c.id] || 0) + "</td>" : "";
-        return "<tr><td><b>$" + U.esc(c.token) + "</b></td><td>" + U.timeAgo(c.closeTime, now) + "</td><td>" +
-          U.duration(c.closeTime - c.openTime) + "</td>" + size + '<td class="' + U.cls(c.pnlPct) + '">' + U.pct(c.pnlPct) + "</td></tr>";
-      }).join("");
-      const sizeHead = real ? "<th>Taille</th>" : "";
-      el("closed-table").innerHTML =
-        "<thead><tr><th>Token</th><th>Clôturé</th><th>Durée</th>" + sizeHead + "<th>Résultat</th></tr></thead><tbody>" +
-        (closedRows || '<tr><td colspan="5" class="empty-note">Pas encore de trade.</td></tr>') + "</tbody>";
-    }
-
     function ingest(data) {
       if (data.source === "onchain") {
         dataSource = "onchain";
         payload = data;
-        const partial = data.truncated
-          ? " Historique partiel : seuls les swaps les plus récents ont pu être analysés."
-          : "";
-        setNotice(
-          "<strong>Données on-chain réelles</strong> (" + data.swaps_count + " swaps DEX sur 30 jours, via Moralis). " +
-          "Seuls les trades clôturés sont comptés ; le PnL est réalisé et estimé en dollars, et la courbe entre l'entrée " +
-          "et la sortie de chaque trade est interpolée." + partial,
-          "real"
-        );
         if (!data.trades.length) {
           ready = false;
           refreshAmount();
@@ -639,11 +552,12 @@
       } else {
         dataSource = "simulated";
         payload = null;
-        setNotice(SIM_NOTICE_HTML, "");
       }
       ready = true;
+      stateEl.hidden = true;
+      padEl.hidden = false;
+      showPerf();
       refreshAmount();
-      render();
     }
 
     async function load() {
@@ -653,8 +567,6 @@
         ingest({ source: "simulated" });
         return;
       }
-      setNotice("Chargement des données on-chain…", "");
-      contentEl.hidden = true;
       padEl.hidden = true;
       stateEl.hidden = false;
       stateEl.innerHTML = '<p class="state-msg"><span class="spinner"></span> Analyse des swaps du wallet en cours…</p>';
@@ -666,12 +578,11 @@
         if (!res.ok) throw new Error(body.message || "Données on-chain indisponibles.");
         ingest(body);
       } catch (err) {
-        setNotice("Données on-chain indisponibles.", "");
         showState(U.esc(err.message), true);
       }
     }
 
-    // Sélecteur de réseau EVM
+    // Sélecteur de réseau EVM (uniquement avec les données on-chain)
     const netSeg = el("network-seg");
     if (netSeg) {
       netSeg.addEventListener("click", function (e) {
@@ -724,7 +635,7 @@
     }
     startBtn.addEventListener("click", start);
 
-    // Le paramètre ?go=1 (adresse collée) ne sert plus qu'à arriver sur l'écran de saisie.
+    // Le paramètre ?go=1 (adresse collée) ne sert qu'à arriver sur l'écran de saisie.
     if (new URLSearchParams(window.location.search).get("go") === "1") {
       history.replaceState(null, "", window.location.pathname + (onchainAvailable && chain === "evm" ? "?network=" + encodeURIComponent(network) : ""));
     }
