@@ -22,7 +22,8 @@ bp = Blueprint("sim", __name__)
 EVM_RE = re.compile(r"^0x[a-fA-F0-9]{40}$")
 SOL_RE = re.compile(r"^[1-9A-HJ-NP-Za-km-z]{32,44}$")
 
-ALLOWED_BALANCES = (1000, 10000, 100000)
+MIN_BALANCE = 1.0
+MAX_BALANCE = 1000000.0
 ALLOWED_ALLOC = (0.05, 0.1, 0.25, 0.5)
 ALLOWED_SPEEDS = (300, 1200, 6000)
 ALLOWED_MODES = ("live", "backtest")
@@ -242,9 +243,10 @@ def create_simulation():
     except (TypeError, ValueError):
         return _error("invalid_params", "Paramètres de simulation invalides.", 400)
     mode = payload.get("mode", "live")
+    balance = round(balance, 2)
 
     if (
-        balance not in ALLOWED_BALANCES
+        not (MIN_BALANCE <= balance <= MAX_BALANCE)
         or not any(abs(alloc_pct - a) < 1e-9 for a in ALLOWED_ALLOC)
         or speed not in ALLOWED_SPEEDS
         or mode not in ALLOWED_MODES

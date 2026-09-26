@@ -13,11 +13,7 @@ aucune transaction réelle n'est passée.
 - **Accueil** (`/`) : solde fictif avec bouton « Déposer » (argent fictif stocké dans le navigateur, aucun paiement), meilleurs traders de la semaine, et liste des 250 premières cryptomonnaies avec prix en dollars, variation 24 h, favoris (étoile), recherche et filtres (Cryptomonnaies, Tendances, Plus échangés, Baisses), actualisée toutes les 30 s.
 - **Classement de traders** (7J / 30J, tri par PnL ou win rate) avec courbes de performance.
 - **Coller un wallet** (adresse Solana ou EVM `0x…`) : ouvre le profil du wallet et lance la simulation.
-- **Simulation de copie** : solde fictif (1 000 / 10 000 / 100 000 $), part du capital par trade
-  (5 à 50 %), frais + slippage simulés (0,8 % par côté).
-  - *En direct* : le temps est accéléré (×300, ×1 200, ×6 000), les trades du wallet sont copiés
-    au fil de l'eau, jusqu'à 90 jours simulés.
-  - *Backtest* : rejoue instantanément les 30 derniers jours du wallet.
+- **Copie d'un wallet** : un écran de saisie du montant façon FOMO (gros montant, boutons rapides 50 / 100 / 500 / 1 500 $, pavé numérique ou clavier). Le montant (1 à 1 000 000 $, argent fictif) devient le capital de la simulation ; 10 % du capital est engagé par trade copié, frais + slippage simulés (0,8 % par côté). Le temps est accéléré (×6 000) : les trades du wallet sont copiés au fil de l'eau, jusqu'à 90 jours simulés. La performance du wallet est affichée sous l'écran de saisie.
 - Comptes utilisateurs (email + mot de passe) pour enregistrer ses simulations.
 
 ## Données : simulées par défaut, on-chain réelles avec une clé Moralis

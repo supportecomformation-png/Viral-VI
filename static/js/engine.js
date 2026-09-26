@@ -245,7 +245,7 @@
       if (ev.type === "open") {
         const eq = equityAt(ev.time);
         const size = Math.min(cash, eq * allocPct);
-        if (size >= 1) {
+        if (size >= 0.01) {
           cash -= size;
           positions[trade.id] = { trade: trade, invested: size, units: size * (1 - fee), openTime: ev.time };
           feed.push({ type: "open", time: ev.time, token: trade.token, size: size });

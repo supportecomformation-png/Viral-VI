@@ -2,115 +2,117 @@
 {% block title %}{{ featured.handle if featured else 'Wallet' }} — CopyLab{% endblock %}
 {% block page %}trader{% endblock %}
 {% block content %}
-<section class="container trader-head"
+<section class="container copy-screen"
          id="trader-root"
          data-wallet="{{ wallet }}"
          data-chain="{{ chain }}"
          data-onchain="{{ '1' if onchain else '0' }}"
          data-network="{{ default_network }}"
          data-logged-in="{{ '1' if current_user else '0' }}">
-  <div class="trader-id">
-    <span class="avatar avatar-lg" data-avatar="{{ wallet }}"></span>
-    <div>
-      <h1>{{ featured.handle if featured else 'Wallet ' ~ wallet[:4] ~ '…' ~ wallet[-4:] }}</h1>
-      <div class="addr-row">
-        <code class="addr" title="{{ wallet }}">{{ wallet[:6] }}…{{ wallet[-6:] }}</code>
-        <button type="button" class="icon-btn" id="copy-addr" data-value="{{ wallet }}" aria-label="Copier l'adresse">Copier l'adresse</button>
-        <span class="chain-badge chain-{{ chain }}">{{ 'Solana' if chain == 'solana' else 'EVM' }}</span>
+
+  <div class="cs-top">
+    <a href="{{ url_for('sim.traders') }}" class="cs-back" aria-label="Retour aux traders">←</a>
+    <div class="cs-id">
+      <span class="avatar" data-avatar="{{ wallet }}"></span>
+      <div class="cs-name">
+        <strong>{{ featured.handle if featured else 'Wallet ' ~ wallet[:4] ~ '…' ~ wallet[-4:] }}</strong>
+        <small>
+          <code title="{{ wallet }}">{{ wallet[:4] }}…{{ wallet[-4:] }}</code>
+          <span class="chain-badge chain-{{ chain }}">{{ 'Solana' if chain == 'solana' else 'EVM' }}</span>
+        </small>
       </div>
-      {% if featured %}<p class="trader-bio">{{ featured.bio }}</p>{% endif %}
+    </div>
+    <div class="cs-perf">
+      <b id="cs-perf-value">—</b>
+      <small>PnL 30J</small>
     </div>
   </div>
+
   <p class="sim-notice" id="data-notice">
     {% if onchain %}Chargement des données on-chain…{% else %}Track record <strong>simulé</strong> : généré à partir de l'adresse, ce ne sont pas les vraies
     transactions de ce wallet.{% endif %}
   </p>
-</section>
 
-<section class="container trader-grid">
-  <div class="trader-main">
-    {% if onchain and chain == 'evm' %}
-    <div class="net-row">
-      <span class="field-label">Réseau</span>
-      <div class="seg seg-wrap" id="network-seg" role="tablist" aria-label="Réseau EVM">
-        {% for key, label in networks.items() %}
-          <button type="button" data-network="{{ key }}"{% if key == default_network %} class="active"{% endif %}>{{ label }}</button>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
-
-    <div id="trader-state" class="card state-card" hidden></div>
-
-    <div id="trader-content">
-    <div class="stat-row" id="trader-stats"></div>
-
-    <div class="card">
-      <div class="card-head">
-        <h3>Performance</h3>
-        <div class="seg" id="chart-seg">
-          <button type="button" data-period="7">7J</button>
-          <button type="button" data-period="30" class="active">30J</button>
-        </div>
-      </div>
-      <div class="chart" id="trader-chart"></div>
-    </div>
-
-    <div class="card">
-      <h3>Positions ouvertes</h3>
-      <div class="table-scroll"><table class="tbl" id="open-table"></table></div>
-      <p class="fine" id="open-note" hidden>Positions encore détenues, non valorisées (pas de prix en temps réel).</p>
-    </div>
-
-    <div class="card">
-      <h3>Derniers trades</h3>
-      <div class="table-scroll"><table class="tbl" id="closed-table"></table></div>
-    </div>
+  {% if onchain and chain == 'evm' %}
+  <div class="net-row">
+    <span class="field-label">Réseau</span>
+    <div class="seg seg-wrap" id="network-seg" role="tablist" aria-label="Réseau EVM">
+      {% for key, label in networks.items() %}
+        <button type="button" data-network="{{ key }}"{% if key == default_network %} class="active"{% endif %}>{{ label }}</button>
+      {% endfor %}
     </div>
   </div>
+  {% endif %}
 
-  <aside class="copy-panel card" id="copy-panel">
-    <h3>Copier ce wallet <span class="pill pill-sm">Démo</span></h3>
+  <div id="trader-state" class="card state-card" hidden></div>
 
-    <label class="field-label">Solde fictif de départ</label>
-    <div class="chips" data-field="balance">
-      <button type="button" data-value="1000">1 000 $</button>
-      <button type="button" data-value="10000" class="active">10 000 $</button>
-      <button type="button" data-value="100000">100 000 $</button>
+  <div id="copy-pad">
+    <div class="amount-block">
+      <div class="amount-display zero" id="amount-display" aria-live="polite">0 $</div>
+      <div class="amount-sub">Montant à investir (argent fictif)</div>
     </div>
 
-    <label class="field-label">Part de ton capital par trade</label>
-    <div class="chips" data-field="alloc_pct">
-      <button type="button" data-value="0.05">5 %</button>
-      <button type="button" data-value="0.1" class="active">10 %</button>
-      <button type="button" data-value="0.25">25 %</button>
-      <button type="button" data-value="0.5">50 %</button>
+    <div class="quick-amounts" id="quick-amounts">
+      <button type="button" data-amount="50">50 $</button>
+      <button type="button" data-amount="100">100 $</button>
+      <button type="button" data-amount="500">500 $</button>
+      <button type="button" data-amount="1500">1 500 $</button>
     </div>
 
-    <label class="field-label">Mode</label>
-    <div class="chips" data-field="mode">
-      <button type="button" data-value="live" class="active">En direct (temps accéléré)</button>
-      <button type="button" data-value="backtest">Rejouer les 30 derniers jours</button>
+    <div class="keypad" id="keypad" role="group" aria-label="Pavé numérique">
+      <button type="button" data-key="1">1</button>
+      <button type="button" data-key="2">2</button>
+      <button type="button" data-key="3">3</button>
+      <button type="button" data-key="4">4</button>
+      <button type="button" data-key="5">5</button>
+      <button type="button" data-key="6">6</button>
+      <button type="button" data-key="7">7</button>
+      <button type="button" data-key="8">8</button>
+      <button type="button" data-key="9">9</button>
+      <button type="button" data-key=".">,</button>
+      <button type="button" data-key="0">0</button>
+      <button type="button" data-key="back" aria-label="Effacer">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1zM12 9l6 6m0-6l-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </div>
 
-    <div id="speed-block">
-      <label class="field-label">Vitesse</label>
-      <div class="chips" data-field="speed">
-        <button type="button" data-value="300">Normal ×300</button>
-        <button type="button" data-value="1200">Rapide ×1 200</button>
-        <button type="button" data-value="6000" class="active">Turbo ×6 000</button>
-      </div>
-    </div>
-
-    <button type="button" class="btn btn-primary btn-block btn-lg" id="start-sim">Lancer la simulation</button>
+    <button type="button" class="btn btn-primary btn-block btn-lg" id="start-sim" disabled>Entre un montant</button>
     <p class="form-error" id="start-error" hidden></p>
-    <p class="fine">
-      Frais et slippage simulés : 0,8&nbsp;% par achat et par vente. Aucun vrai argent, aucun dépôt.
+    <p class="fine cs-fine">
+      Argent fictif : aucun vrai fonds n'est utilisé. Frais et slippage simulés : 0,8&nbsp;% par achat et par vente.
       Les performances passées ne préjugent pas des performances futures.
     </p>
-    {% if not current_user %}
-      <p class="fine login-hint">Un compte gratuit est nécessaire pour enregistrer tes simulations.</p>
-    {% endif %}
-  </aside>
+  </div>
+</section>
+
+<section class="container details" id="trader-content">
+  <h2 class="details-title">Performance du wallet</h2>
+  <div class="stat-row" id="trader-stats"></div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3>Performance</h3>
+      <div class="seg" id="chart-seg">
+        <button type="button" data-period="7">7J</button>
+        <button type="button" data-period="30" class="active">30J</button>
+      </div>
+    </div>
+    <div class="chart" id="trader-chart"></div>
+  </div>
+
+  <div class="card">
+    <h3>Positions ouvertes</h3>
+    <div class="table-scroll"><table class="tbl" id="open-table"></table></div>
+    <p class="fine" id="open-note" hidden>Positions encore détenues, non valorisées (pas de prix en temps réel).</p>
+  </div>
+
+  <div class="card">
+    <h3>Derniers trades</h3>
+    <div class="table-scroll"><table class="tbl" id="closed-table"></table></div>
+  </div>
+
+  <p class="center-cta">
+    <button type="button" class="icon-btn" id="copy-addr" data-value="{{ wallet }}" aria-label="Copier l'adresse">Copier l'adresse du wallet</button>
+  </p>
 </section>
 {% endblock %}

@@ -426,59 +426,106 @@
     let network = root.getAttribute("data-network") || (chain === "solana" ? "solana" : "base");
     U.applyAvatars(document);
 
-    const copyBtn = document.getElementById("copy-addr");
-    copyBtn.addEventListener("click", function () {
-      U.copyText(copyBtn.getAttribute("data-value")).then(function () {
-        copyBtn.textContent = "Adresse copiée";
-        setTimeout(function () { copyBtn.textContent = "Copier l'adresse"; }, 1500);
-      });
-    });
-
     const el = function (id) { return document.getElementById(id); };
     const noticeEl = el("data-notice");
     const stateEl = el("trader-state");
     const contentEl = el("trader-content");
+    const padEl = el("copy-pad");
     const startBtn = el("start-sim");
     const errEl = el("start-error");
-    const panel = el("copy-panel");
-    const speedBlock = el("speed-block");
+    const perfEl = el("cs-perf-value");
+    const displayEl = el("amount-display");
+
+    const copyBtn = el("copy-addr");
+    copyBtn.addEventListener("click", function () {
+      U.copyText(copyBtn.getAttribute("data-value")).then(function () {
+        copyBtn.textContent = "Adresse copiée";
+        setTimeout(function () { copyBtn.textContent = "Copier l'adresse du wallet"; }, 1500);
+      });
+    });
 
     // Source de données courante : "simulated" ou "onchain" (charge utile Moralis).
     let dataSource = "simulated";
     let payload = null;
     let ready = false;
 
-    // ----- panneau de copie
-    const state = { balance: 10000, alloc_pct: 0.1, mode: "live", speed: 6000 };
-    panel.querySelectorAll(".chips").forEach(function (group) {
-      group.addEventListener("click", function (e) {
-        const btn = e.target.closest("button");
-        if (!btn) return;
-        group.querySelectorAll("button").forEach(function (b) { b.classList.remove("active"); });
-        btn.classList.add("active");
-        const field = group.getAttribute("data-field");
-        const raw = btn.getAttribute("data-value");
-        state[field] = field === "mode" ? raw : parseFloat(raw);
-        if (field === "mode") speedBlock.hidden = raw === "backtest";
-      });
-    });
-    if (!loggedIn) startBtn.textContent = "Créer un compte et lancer";
+    // ----- saisie du montant (pavé numérique, boutons rapides, clavier)
+    const MIN_AMOUNT = 1;
+    const MAX_AMOUNT = 1000000;
+    const PENDING_KEY = "copylab_pending_amount:" + wallet;
+    let raw = "";
 
-    function setStartEnabled(enabled) {
-      startBtn.disabled = !enabled;
+    function amountValue() {
+      const v = parseFloat(raw);
+      return isFinite(v) ? v : 0;
     }
 
-    function relabelModes() {
-      const live = panel.querySelector('[data-field="mode"] [data-value="live"]');
-      const back = panel.querySelector('[data-field="mode"] [data-value="backtest"]');
-      if (dataSource === "onchain") {
-        live.textContent = "Rejeu accéléré des 30 derniers jours réels";
-        back.textContent = "Résultat instantané sur 30 jours réels";
+    function formatAmount() {
+      if (!raw) return "0";
+      const parts = raw.split(".");
+      const whole = (parts[0] === "" ? 0 : parseInt(parts[0], 10)).toLocaleString("fr-FR");
+      return parts.length > 1 ? whole + "," + parts[1] : whole;
+    }
+
+    function refreshAmount() {
+      displayEl.textContent = formatAmount() + " $";
+      displayEl.classList.toggle("zero", amountValue() === 0);
+      const amount = amountValue();
+      const valid = amount >= MIN_AMOUNT;
+      startBtn.disabled = !(ready && valid);
+      if (!valid) {
+        startBtn.textContent = amount > 0 ? "Minimum 1 $" : "Entre un montant";
       } else {
-        live.textContent = "En direct (temps accéléré)";
-        back.textContent = "Rejouer les 30 derniers jours";
+        const label = formatAmount() + " $";
+        startBtn.textContent = loggedIn ? "Copier avec " + label : "Créer un compte et copier avec " + label;
       }
+      document.querySelectorAll("#quick-amounts button").forEach(function (b) {
+        b.classList.toggle("active", parseFloat(b.getAttribute("data-amount")) === amount && !/[.]$/.test(raw));
+      });
     }
+
+    function pressKey(key) {
+      errEl.hidden = true;
+      if (key === "back") {
+        raw = raw.slice(0, -1);
+      } else if (key === ".") {
+        if (raw.indexOf(".") === -1) raw = (raw || "0") + ".";
+      } else {
+        let next = raw === "0" ? key : raw + key;
+        const parts = next.split(".");
+        if (parts.length > 1 && parts[1].length > 2) return;
+        if (parts[0].length > 7 || parseFloat(next) > MAX_AMOUNT) return;
+        raw = next;
+      }
+      refreshAmount();
+    }
+
+    el("keypad").addEventListener("click", function (e) {
+      const btn = e.target.closest("button");
+      if (btn) pressKey(btn.getAttribute("data-key"));
+    });
+    el("quick-amounts").addEventListener("click", function (e) {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+      errEl.hidden = true;
+      raw = String(parseFloat(btn.getAttribute("data-amount")));
+      refreshAmount();
+    });
+    document.addEventListener("keydown", function (e) {
+      const tag = (e.target && e.target.tagName) || "";
+      if (tag === "INPUT" || tag === "TEXTAREA" || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (/^[0-9]$/.test(e.key)) pressKey(e.key);
+      else if (e.key === "." || e.key === ",") pressKey(".");
+      else if (e.key === "Backspace") pressKey("back");
+      else if (e.key === "Enter" && !startBtn.disabled) start();
+    });
+
+    // Montant saisi avant une redirection vers l'inscription : on le retrouve au retour.
+    try {
+      const pending = sessionStorage.getItem(PENDING_KEY);
+      if (pending && /^\d+(\.\d{1,2})?$/.test(pending) && parseFloat(pending) <= MAX_AMOUNT) raw = pending;
+      sessionStorage.removeItem(PENDING_KEY);
+    } catch (e) {}
 
     // ----- affichage
     function setNotice(html, klass) {
@@ -488,7 +535,10 @@
 
     function showState(html, withRetry) {
       contentEl.hidden = true;
+      padEl.hidden = true;
       stateEl.hidden = false;
+      perfEl.textContent = "—";
+      perfEl.className = "";
       stateEl.innerHTML = '<p class="state-msg">' + html + "</p>" +
         (withRetry ? '<button type="button" class="btn btn-ghost btn-sm" id="retry-load">Réessayer</button>' : "");
       const retry = el("retry-load");
@@ -497,11 +547,15 @@
 
     function render() {
       stateEl.hidden = true;
+      padEl.hidden = false;
       contentEl.hidden = false;
       const real = dataSource === "onchain" ? payload.trades : null;
       const now = dataSource === "onchain" ? payload.window_end : nowSec();
       const s7 = E.traderStats(wallet, now, 7, real);
       const s30 = E.traderStats(wallet, now, 30, real);
+
+      perfEl.textContent = U.pct(s30.pnlPct, Math.abs(s30.pnlPct) >= 10 ? 0 : 1);
+      perfEl.className = U.cls(s30.pnlPct);
 
       el("trader-stats").innerHTML =
         statCard("PnL 7J", U.pct(s7.pnlPct, Math.abs(s7.pnlPct) >= 10 ? 0 : 1), U.cls(s7.pnlPct)) +
@@ -573,8 +627,7 @@
         );
         if (!data.trades.length) {
           ready = false;
-          setStartEnabled(false);
-          relabelModes();
+          refreshAmount();
           showState(
             "Aucun trade clôturé détecté sur les 30 derniers jours pour ce wallet" +
             (chain === "evm" ? " sur ce réseau. Essaie un autre réseau ci-dessus." : ".") +
@@ -589,21 +642,22 @@
         setNotice(SIM_NOTICE_HTML, "");
       }
       ready = true;
-      setStartEnabled(true);
-      relabelModes();
+      refreshAmount();
       render();
     }
 
     async function load() {
       ready = false;
+      refreshAmount();
       if (!onchainAvailable) {
         ingest({ source: "simulated" });
-        maybeAutostart();
         return;
       }
-      setStartEnabled(false);
       setNotice("Chargement des données on-chain…", "");
-      showState('<span class="spinner"></span> Analyse des swaps du wallet en cours…', false);
+      contentEl.hidden = true;
+      padEl.hidden = true;
+      stateEl.hidden = false;
+      stateEl.innerHTML = '<p class="state-msg"><span class="spinner"></span> Analyse des swaps du wallet en cours…</p>';
       try {
         const res = await fetch("/api/wallet/" + encodeURIComponent(wallet) + "/trades?network=" + encodeURIComponent(network), {
           credentials: "same-origin",
@@ -613,10 +667,8 @@
         ingest(body);
       } catch (err) {
         setNotice("Données on-chain indisponibles.", "");
-        setStartEnabled(false);
         showState(U.esc(err.message), true);
       }
-      maybeAutostart();
     }
 
     // Sélecteur de réseau EVM
@@ -634,7 +686,8 @@
     }
 
     async function start() {
-      if (!ready) return;
+      const amount = Math.round(amountValue() * 100) / 100;
+      if (!ready || amount < MIN_AMOUNT) return;
       errEl.hidden = true;
       startBtn.disabled = true;
       try {
@@ -644,49 +697,39 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             wallet: wallet,
-            balance: state.balance,
-            alloc_pct: state.alloc_pct,
-            mode: state.mode,
-            speed: state.speed,
+            balance: amount,
+            alloc_pct: 0.1,
+            mode: "live",
+            speed: 6000,
             source: dataSource,
             network: dataSource === "onchain" ? network : null,
           }),
         }).then(async function (res) {
           if (res.status === 401) {
+            try { sessionStorage.setItem(PENDING_KEY, String(amount)); } catch (e) {}
             window.location.href = "/auth/signup?next=" +
-              encodeURIComponent(window.location.pathname + "?go=1&network=" + encodeURIComponent(network));
+              encodeURIComponent(window.location.pathname + "?network=" + encodeURIComponent(network));
             return null;
           }
           const body = await res.json().catch(function () { return {}; });
-          if (!res.ok) throw new Error(body.message || "Impossible de lancer la simulation.");
+          if (!res.ok) throw new Error(body.message || "Impossible de lancer la copie.");
           return body;
         });
         if (data) window.location.href = "/sim/" + data.simulation.id;
       } catch (err) {
         errEl.textContent = err.message;
         errEl.hidden = false;
-        startBtn.disabled = false;
+        refreshAmount();
       }
     }
     startBtn.addEventListener("click", start);
 
-    // Adresse collée depuis la page d'accueil : lancement direct si connecté
-    // (une fois les données chargées).
-    let autostart = new URLSearchParams(window.location.search).get("go") === "1";
-    if (autostart) {
+    // Le paramètre ?go=1 (adresse collée) ne sert plus qu'à arriver sur l'écran de saisie.
+    if (new URLSearchParams(window.location.search).get("go") === "1") {
       history.replaceState(null, "", window.location.pathname + (onchainAvailable && chain === "evm" ? "?network=" + encodeURIComponent(network) : ""));
     }
-    function maybeAutostart() {
-      if (!autostart || !ready) return;
-      autostart = false;
-      if (loggedIn) {
-        startBtn.textContent = "Lancement…";
-        start();
-      } else {
-        panel.classList.add("attention");
-      }
-    }
 
+    refreshAmount();
     load();
   }
 

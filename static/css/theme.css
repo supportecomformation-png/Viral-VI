@@ -267,11 +267,9 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .pill-muted { color: var(--muted); background: rgba(255, 255, 255, 0.06); border-color: var(--border-strong); }
 .section-head .pill { align-self: center; }
 
-.trader-grid, .sim-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; padding-top: 6px; padding-bottom: 40px; align-items: start; }
-.copy-panel, .sim-side { position: sticky; top: 76px; }
-.copy-panel.attention { border-color: var(--up); box-shadow: var(--shadow-glow); }
+.sim-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; padding-top: 6px; padding-bottom: 40px; align-items: start; }
+.sim-side { position: sticky; top: 76px; }
 .field-label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--muted); margin: 16px 0 8px; }
-.copy-panel .btn-block { margin-top: 20px; }
 .fine { font-size: 0.76rem; color: var(--faint); margin: 12px 0 0; }
 .form-error { color: var(--down); font-size: 0.86rem; margin: 10px 0 0; }
 .login-hint { color: var(--warn); }
@@ -325,9 +323,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .bottom-nav { display: none; }
 
 @media (max-width: 900px) {
-  .trader-grid, .sim-grid { grid-template-columns: minmax(0, 1fr); }
-  .copy-panel, .sim-side { position: static; }
-  .copy-panel { order: -1; }
+  .sim-grid { grid-template-columns: minmax(0, 1fr); }
+  .sim-side { position: static; }
   .steps { grid-template-columns: 1fr; }
 }
 
@@ -459,3 +456,52 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
   .coin-row { grid-template-columns: 26px 40px minmax(0, 1fr) auto; gap: 10px; }
   .coin-icon { width: 40px; height: 40px; }
 }
+
+/* ---------- Écran de copie : saisie du montant (façon FOMO) ---------- */
+.copy-screen { max-width: 460px; padding-top: 16px; padding-bottom: 8px; }
+.cs-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.cs-back {
+  display: grid; place-items: center; flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%;
+  color: var(--muted); font-size: 1.2rem; background: var(--surface); border: 1px solid var(--border);
+}
+.cs-back:hover { color: var(--text); text-decoration: none; }
+.cs-id { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+.cs-id .avatar { width: 40px; height: 40px; }
+.cs-name { display: grid; min-width: 0; }
+.cs-name strong { font-size: 1.05rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-name small { display: flex; align-items: center; gap: 6px; color: var(--faint); font-size: 0.78rem; }
+.cs-name code { font-size: 0.78rem; }
+.cs-perf { display: grid; text-align: right; flex: 0 0 auto; }
+.cs-perf b { font-family: 'Space Grotesk', sans-serif; font-size: 1.05rem; }
+.cs-perf small { color: var(--faint); font-size: 0.7rem; }
+.copy-screen .sim-notice { font-size: 0.74rem; padding: 8px 12px; margin-bottom: 10px; }
+
+.amount-block { text-align: center; padding: 26px 0 14px; }
+.amount-display {
+  font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: clamp(3rem, 15vw, 4.2rem);
+  line-height: 1.05; letter-spacing: -0.02em; word-break: break-all; transition: color 0.12s ease;
+}
+.amount-display.zero { color: var(--faint); }
+.amount-sub { color: var(--faint); font-size: 0.82rem; margin-top: 6px; }
+
+.quick-amounts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 6px 0 8px; }
+.quick-amounts button {
+  padding: 11px 4px; border-radius: 999px; border: 1px solid var(--border-strong); background: transparent;
+  color: var(--muted); font: 700 0.92rem 'Inter', sans-serif; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.quick-amounts button.active { color: var(--up); border-color: var(--up); background: rgba(34, 227, 154, 0.08); }
+
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 6px 0 14px; }
+.keypad button {
+  height: 60px; border: none; background: transparent; color: var(--text); border-radius: 14px;
+  font: 500 1.7rem 'Space Grotesk', 'Inter', sans-serif; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  display: grid; place-items: center;
+}
+.keypad button:active { background: var(--surface-2); }
+.keypad button svg { width: 26px; height: 26px; color: var(--muted); }
+.copy-screen .btn-lg { padding: 17px 26px; font-size: 1.05rem; }
+.copy-screen .btn:disabled { background: var(--surface-2); color: var(--faint); box-shadow: none; opacity: 1; }
+.cs-fine { text-align: center; }
+
+.details { max-width: 760px; padding-top: 26px; padding-bottom: 40px; }
+.details-title { font-size: 1.15rem; margin-bottom: 14px; }
