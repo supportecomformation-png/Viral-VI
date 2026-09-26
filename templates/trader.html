@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}{{ featured.handle if featured else 'Wallet' }} — CopyLab{% endblock %}
+{% block page %}trader{% endblock %}
+{% block content %}
+<section class="container trader-head"
+         id="trader-root"
+         data-wallet="{{ wallet }}"
+         data-chain="{{ chain }}"
+         data-logged-in="{{ '1' if current_user else '0' }}">
+  <div class="trader-id">
+    <span class="avatar avatar-lg" data-avatar="{{ wallet }}"></span>
+    <div>
+      <h1>{{ featured.handle if featured else 'Wallet ' ~ wallet[:4] ~ '…' ~ wallet[-4:] }}</h1>
+      <div class="addr-row">
+        <code class="addr" title="{{ wallet }}">{{ wallet[:6] }}…{{ wallet[-6:] }}</code>
+        <button type="button" class="icon-btn" id="copy-addr" data-value="{{ wallet }}" aria-label="Copier l'adresse">Copier l'adresse</button>
+        <span class="chain-badge chain-{{ chain }}">{{ 'Solana' if chain == 'solana' else 'EVM' }}</span>
+      </div>
+      {% if featured %}<p class="trader-bio">{{ featured.bio }}</p>{% endif %}
+    </div>
+  </div>
+  <p class="sim-notice">
+    Track record <strong>simulé</strong> : généré à partir de l'adresse, ce ne sont pas les vraies
+    transactions de ce wallet.
+  </p>
+</section>
+
+<section class="container trader-grid">
+  <div class="trader-main">
+    <div class="stat-row" id="trader-stats"></div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Performance</h3>
+        <div class="seg" id="chart-seg">
+          <button type="button" data-period="7">7J</button>
+          <button type="button" data-period="30" class="active">30J</button>
+        </div>
+      </div>
+      <div class="chart" id="trader-chart"></div>
+    </div>
+
+    <div class="card">
+      <h3>Positions ouvertes</h3>
+      <div class="table-scroll"><table class="tbl" id="open-table"></table></div>
+    </div>
+
+    <div class="card">
+      <h3>Derniers trades</h3>
+      <div class="table-scroll"><table class="tbl" id="closed-table"></table></div>
+    </div>
+  </div>
+
+  <aside class="copy-panel card" id="copy-panel">
+    <h3>Copier ce wallet <span class="pill pill-sm">Démo</span></h3>
+
+    <label class="field-label">Solde fictif de départ</label>
+    <div class="chips" data-field="balance">
+      <button type="button" data-value="1000">1 000 $</button>
+      <button type="button" data-value="10000" class="active">10 000 $</button>
+      <button type="button" data-value="100000">100 000 $</button>
+    </div>
+
+    <label class="field-label">Part de ton capital par trade</label>
+    <div class="chips" data-field="alloc_pct">
+      <button type="button" data-value="0.05">5 %</button>
+      <button type="button" data-value="0.1" class="active">10 %</button>
+      <button type="button" data-value="0.25">25 %</button>
+      <button type="button" data-value="0.5">50 %</button>
+    </div>
+
+    <label class="field-label">Mode</label>
+    <div class="chips" data-field="mode">
+      <button type="button" data-value="live" class="active">En direct (temps accéléré)</button>
+      <button type="button" data-value="backtest">Rejouer les 30 derniers jours</button>
+    </div>
+
+    <div id="speed-block">
+      <label class="field-label">Vitesse</label>
+      <div class="chips" data-field="speed">
+        <button type="button" data-value="300">Normal ×300</button>
+        <button type="button" data-value="1200">Rapide ×1 200</button>
+        <button type="button" data-value="6000" class="active">Turbo ×6 000</button>
+      </div>
+    </div>
+
+    <button type="button" class="btn btn-primary btn-block btn-lg" id="start-sim">Lancer la simulation</button>
+    <p class="form-error" id="start-error" hidden></p>
+    <p class="fine">
+      Frais et slippage simulés : 0,8&nbsp;% par achat et par vente. Aucun vrai argent, aucun dépôt.
+      Les performances passées ne préjugent pas des performances futures.
+    </p>
+    {% if not current_user %}
+      <p class="fine login-hint">Un compte gratuit est nécessaire pour enregistrer tes simulations.</p>
+    {% endif %}
+  </aside>
+</section>
+{% endblock %}

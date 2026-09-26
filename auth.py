@@ -10,10 +10,18 @@ bp = Blueprint("auth", __name__, url_prefix="/auth")
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
+def _safe_next():
+    """URL de retour après connexion : uniquement un chemin relatif interne."""
+    target = request.args.get("next", "")
+    if target.startswith("/") and not target.startswith("//") and "\\" not in target:
+        return target
+    return None
+
+
 @bp.route("/signup", methods=("GET", "POST"))
 def signup():
     if g.get("user"):
-        return redirect(url_for("dashboard.home"))
+        return redirect(_safe_next() or url_for("sim.traders"))
 
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
@@ -31,13 +39,13 @@ def signup():
         if error is None:
             user_id = execute(
                 "INSERT INTO users (email, password_hash, display_name) VALUES (?, ?, ?)",
-                (email, hash_password(password), display_name),
+                (email, hash_password(password), display_name[:60]),
             )
             session.clear()
             session["user_id"] = user_id
             session.permanent = True
-            flash("Compte créé ! Choisis ton abonnement pour accéder au générateur.", "success")
-            return redirect(url_for("billing.pricing"))
+            flash("Compte créé ! Colle l'adresse d'un wallet pour lancer ta première simulation.", "success")
+            return redirect(_safe_next() or url_for("sim.traders"))
 
         flash(error, "error")
 
@@ -47,7 +55,7 @@ def signup():
 @bp.route("/login", methods=("GET", "POST"))
 def login():
     if g.get("user"):
-        return redirect(url_for("dashboard.home"))
+        return redirect(_safe_next() or url_for("sim.traders"))
 
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
@@ -62,9 +70,7 @@ def login():
             session.clear()
             session["user_id"] = user["id"]
             session.permanent = True
-            if user["plan"] == "pro":
-                return redirect(url_for("dashboard.home"))
-            return redirect(url_for("billing.pricing"))
+            return redirect(_safe_next() or url_for("sim.traders"))
 
         flash(error, "error")
 

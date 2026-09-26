@@ -1,8 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Page introuvable — ViralVI{% endblock %}
+{% block title %}Page introuvable — CopyLab{% endblock %}
 {% block content %}
-<section class="container page-header">
-  <h1>404 — Page introuvable</h1>
-  <p>Cette page n'existe pas (ou plus). <a href="{{ url_for('landing') }}">Retour à l'accueil</a>.</p>
+<section class="container center-section">
+  <h1>404</h1>
+  <p>Cette page n'existe pas (ou plus).</p>
+  <a href="{{ url_for('sim.traders') }}" class="btn btn-primary">Voir les traders</a>
 </section>
 {% endblock %}

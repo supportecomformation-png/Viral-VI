@@ -8,25 +8,18 @@
         "includeFiles": [
           "templates/**",
           "static/**",
-          "engine/**",
           "schema.sql",
-          "initial_news.py",
           "app.py",
           "config.py",
           "db.py",
           "auth.py",
           "auth_utils.py",
-          "dashboard.py",
-          "news.py",
-          "billing.py"
+          "sim.py"
         ]
       }
     }
   ],
   "routes": [
     { "src": "/(.*)", "dest": "api/index.py" }
-  ],
-  "crons": [
-    { "path": "/news/api/cron", "schedule": "0 7 * * *" }
   ]
 }

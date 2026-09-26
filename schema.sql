@@ -1,46 +1,37 @@
--- Schéma PostgreSQL — ViralVI (GTA 6 Script Generator)
--- (migré depuis SQLite pour un déploiement serverless / Vercel + Postgres)
+-- Schéma PostgreSQL — CopyLab (démo de copy trading, argent fictif)
+--
+-- `users` est conservée telle quelle (les comptes existants restent valides ;
+-- les colonnes plan / stripe_* ne sont plus utilisées). Les anciennes tables
+-- de l'app précédente (news_items, scripts) ne sont plus créées ni lues ;
+-- si elles existent encore dans ta base, elles sont simplement ignorées.
 
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     display_name TEXT NOT NULL,
-    plan TEXT NOT NULL DEFAULT 'inactive',        -- 'inactive' | 'pro' (abonnement actif)
+    plan TEXT NOT NULL DEFAULT 'inactive',
     stripe_customer_id TEXT,
     stripe_subscription_id TEXT,
     is_admin INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
 );
 
-CREATE TABLE IF NOT EXISTS news_items (
-    id SERIAL PRIMARY KEY,
-    title TEXT NOT NULL,
-    summary TEXT NOT NULL,
-    url TEXT UNIQUE,
-    source TEXT,
-    tags TEXT,                  -- tags séparés par des virgules
-    published_at TEXT NOT NULL, -- ISO date (YYYY-MM-DD)
-    created_at TEXT NOT NULL DEFAULT to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
-);
-
-CREATE TABLE IF NOT EXISTS scripts (
+-- Une simulation = "l'utilisateur copie ce wallet avec X $ fictifs".
+-- Seuls les paramètres sont stockés : l'état (positions, PnL, courbe) est
+-- recalculé de façon déterministe côté client à partir de ces paramètres.
+CREATE TABLE IF NOT EXISTS simulations (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    news_id INTEGER REFERENCES news_items(id) ON DELETE SET NULL,
-    topic TEXT NOT NULL,
-    angle TEXT NOT NULL,
-    tone TEXT NOT NULL,
-    hook TEXT NOT NULL,
-    body TEXT NOT NULL,        -- lignes séparées par \n
-    cta TEXT NOT NULL,
-    hashtags TEXT NOT NULL,    -- séparés par des espaces
-    virality_score INTEGER NOT NULL,
-    score_breakdown TEXT NOT NULL, -- JSON
-    tips TEXT,                     -- JSON (liste de conseils)
-    source_mode TEXT NOT NULL DEFAULT 'template', -- 'template' | 'ai'
+    wallet TEXT NOT NULL,
+    chain TEXT NOT NULL,                              -- 'solana' | 'evm'
+    mode TEXT NOT NULL DEFAULT 'live',                -- 'live' | 'backtest'
+    balance DOUBLE PRECISION NOT NULL,                -- solde fictif de départ ($)
+    alloc_pct DOUBLE PRECISION NOT NULL,              -- part de l'équité engagée par trade (0-1)
+    speed INTEGER NOT NULL,                           -- accélération du temps (x300, x1200, x6000)
+    started_at DOUBLE PRECISION NOT NULL,             -- epoch (s), horloge serveur
+    stopped_at DOUBLE PRECISION,                      -- epoch (s) si arrêtée manuellement
     created_at TEXT NOT NULL DEFAULT to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
 );
 
-CREATE INDEX IF NOT EXISTS idx_scripts_user ON scripts(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_news_published ON news_items(published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_simulations_user ON simulations(user_id, id DESC);

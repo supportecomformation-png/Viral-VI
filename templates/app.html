@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Mes simulations — CopyLab{% endblock %}
+{% block page %}app{% endblock %}
+{% block content %}
+<section class="container page-head">
+  <h1>Mes simulations</h1>
+  <p>Salut {{ current_user.display_name }} — tes copies en argent fictif.</p>
+</section>
+
+<section class="container">
+  <div class="sim-list" id="sim-list">
+    <p class="empty-note">Chargement…</p>
+  </div>
+  <div class="center-cta">
+    <a href="{{ url_for('sim.traders') }}" class="btn btn-primary">Copier un nouveau wallet</a>
+  </div>
+</section>
+{% endblock %}

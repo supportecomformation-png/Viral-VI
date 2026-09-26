@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Meilleurs traders — CopyLab{% endblock %}
+{% block page %}traders{% endblock %}
+{% block content %}
+<section class="container page-head">
+  <h1>Meilleurs traders</h1>
+  <p>Wallets d'exemple, performances simulées. Copie-en un pour lancer une simulation.</p>
+
+  <form class="paste-form" autocomplete="off" novalidate>
+    <input type="text" class="paste-input" placeholder="Colle une adresse de wallet (Solana ou 0x…)" aria-label="Adresse du wallet" spellcheck="false">
+    <button type="submit" class="btn btn-primary">Copier ce wallet</button>
+  </form>
+  <p class="paste-error" hidden></p>
+</section>
+
+<section class="container">
+  <div class="toolbar">
+    <div class="seg" id="period-seg" role="tablist" aria-label="Période">
+      <button type="button" data-period="7">7J</button>
+      <button type="button" data-period="30" class="active">30J</button>
+    </div>
+    <div class="seg" id="sort-seg" role="tablist" aria-label="Tri">
+      <button type="button" data-sort="pnl" class="active">PnL</button>
+      <button type="button" data-sort="winrate">Win rate</button>
+    </div>
+  </div>
+  <div class="trader-list" id="trader-list"></div>
+</section>
+{% endblock %}
+{% block extra_scripts %}
+<script>window.DEMO_TRADERS = {{ traders|tojson }};</script>
+{% endblock %}

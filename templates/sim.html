@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Simulation — CopyLab{% endblock %}
+{% block page %}sim{% endblock %}
+{% block content %}
+<section class="container sim-head" id="sim-root" data-sim-id="{{ sim_id }}">
+  <a href="{{ url_for('sim.my_simulations') }}" class="back-link">← Mes simulations</a>
+  <div class="sim-title">
+    <span class="avatar avatar-lg" id="sim-avatar"></span>
+    <div>
+      <h1 id="sim-name">Simulation</h1>
+      <div class="addr-row"><code class="addr" id="sim-addr"></code><span class="badge" id="sim-status"></span></div>
+    </div>
+  </div>
+
+  <div class="equity-block">
+    <div class="equity-label">Valeur du portefeuille (fictif)</div>
+    <div class="equity-value" id="sim-equity">—</div>
+    <div class="equity-pnl" id="sim-pnl">—</div>
+  </div>
+  <div class="progress" id="sim-progress-wrap" hidden><span id="sim-progress"></span></div>
+  <p class="progress-label" id="sim-progress-label"></p>
+</section>
+
+<section class="container sim-grid">
+  <div class="sim-main">
+    <div class="card">
+      <h3>Évolution du portefeuille</h3>
+      <div class="chart" id="sim-chart"></div>
+    </div>
+
+    <div class="stat-row" id="sim-stats"></div>
+
+    <div class="card">
+      <h3>Positions ouvertes</h3>
+      <div class="table-scroll"><table class="tbl" id="sim-open"></table></div>
+    </div>
+
+    <div class="card">
+      <h3>Activité</h3>
+      <ul class="feed" id="sim-feed"></ul>
+    </div>
+  </div>
+
+  <aside class="card sim-side">
+    <h3>Réglages</h3>
+    <dl class="kv" id="sim-params"></dl>
+    <div class="side-actions">
+      <button type="button" class="btn btn-ghost btn-block" id="btn-stop" hidden>Arrêter la simulation</button>
+      <a class="btn btn-primary btn-block" id="btn-again" href="#">Relancer avec ce wallet</a>
+      <button type="button" class="btn btn-danger btn-block" id="btn-delete">Supprimer</button>
+    </div>
+    <p class="fine">Le temps est accéléré : une simulation dure au maximum 90 jours simulés.</p>
+  </aside>
+</section>
+{% endblock %}

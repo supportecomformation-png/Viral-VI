@@ -35,7 +35,7 @@ def _resolve_database_url():
 class Config:
     # Clé de signature des sessions Flask. On lit d'abord APP_SECRET_KEY /
     # FLASK_SECRET_KEY pour éviter tout conflit avec une variable `SECRET_KEY`
-    # déjà occupée par une intégration (Stripe, etc.).
+    # déjà occupée par une intégration.
     SECRET_KEY = (
         os.environ.get("APP_SECRET_KEY")
         or os.environ.get("FLASK_SECRET_KEY")
@@ -48,18 +48,3 @@ class Config:
         DATABASE_URL = "postgresql://" + DATABASE_URL[len("postgres://"):]
 
     PERMANENT_SESSION_LIFETIME = timedelta(days=30)
-
-    # Abonnement unique (payant)
-    PRO_PLAN_PRICE_EUR = 19
-
-    # Stripe (optionnel — l'app tourne en "mode démo" si absent)
-    STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
-    STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID", "")
-    STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
-    STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
-
-    APP_BASE_URL = os.environ.get("APP_BASE_URL", "http://127.0.0.1:5000")
-
-    # IA optionnelle (l'utilisateur colle sa propre clé côté navigateur —
-    # jamais stockée en base). Modèle utilisé si une clé est fournie :
-    ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")

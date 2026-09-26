@@ -23,35 +23,18 @@ def load_logged_in_user():
 
 
 def login_required(view):
+    """Réserve la vue aux utilisateurs connectés.
+
+    Les routes /api/* reçoivent un 401 JSON ; les pages sont redirigées vers
+    la connexion, avec `next` pour revenir sur la page demandée ensuite.
+    """
     @wraps(view)
     def wrapped_view(*args, **kwargs):
         if g.get("user") is None:
-            flash("Connecte-toi pour accéder à cette page.", "error")
-            return redirect(url_for("auth.login"))
-        return view(*args, **kwargs)
-    return wrapped_view
-
-
-def is_subscribed(user):
-    return bool(user) and user["plan"] == "pro"
-
-
-def subscription_required(view):
-    """Réserve la vue aux comptes avec un abonnement actif (`plan == 'pro'`)."""
-    @wraps(view)
-    def wrapped_view(*args, **kwargs):
-        user = g.get("user")
-        if user is None:
-            if request.is_json:
+            if request.path.startswith("/api/"):
                 return jsonify({"error": "auth_required",
                                 "message": "Connecte-toi pour continuer."}), 401
             flash("Connecte-toi pour accéder à cette page.", "error")
-            return redirect(url_for("auth.login"))
-        if not is_subscribed(user):
-            if request.is_json:
-                return jsonify({"error": "subscription_required",
-                                "message": "Un abonnement actif est nécessaire pour générer des scripts."}), 402
-            flash("Un abonnement actif est nécessaire pour accéder au générateur.", "error")
-            return redirect(url_for("billing.pricing"))
+            return redirect(url_for("auth.login", next=request.full_path.rstrip("?")))
         return view(*args, **kwargs)
     return wrapped_view

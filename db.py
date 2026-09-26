@@ -80,32 +80,12 @@ def init_db(app):
                 with conn.cursor() as cur:
                     cur.execute("SELECT pg_advisory_xact_lock(%s)", (SCHEMA_LOCK_KEY,))
                     cur.execute(schema_sql)
-                    _seed_initial_news(cur)
                 conn.commit()
             _schema_ready = True
         except Exception as exc:  # pragma: no cover - log et on continue
             app.logger.warning("init_db: schéma non appliqué (%s)", exc)
 
     app.teardown_appcontext(close_db)
-
-
-def _seed_initial_news(cur):
-    """Insère le fil d'actus GTA 6 initial si la table est vide (premier déploiement)."""
-    cur.execute("SELECT COUNT(*) FROM news_items")
-    if cur.fetchone()[0] > 0:
-        return
-    try:
-        from initial_news import NEWS_ITEMS
-    except ImportError:
-        return
-    for item in NEWS_ITEMS:
-        cur.execute(
-            """INSERT INTO news_items (title, summary, url, source, tags, published_at)
-               VALUES (%s, %s, %s, %s, %s, %s)
-               ON CONFLICT (url) DO NOTHING""",
-            (item["title"], item["summary"], item["url"], item["source"],
-             item["tags"], item["published_at"]),
-        )
 
 
 def query_all(query, args=()):

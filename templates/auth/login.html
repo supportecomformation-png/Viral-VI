@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Connexion — ViralVI{% endblock %}
+{% block title %}Connexion — CopyLab{% endblock %}
 {% block content %}
 <section class="container auth-section">
   <div class="auth-card">
@@ -13,7 +13,7 @@
 
       <button type="submit" class="btn btn-primary btn-block">Se connecter</button>
     </form>
-    <p class="auth-switch">Pas encore de compte ? <a href="{{ url_for('auth.signup') }}">Inscris-toi</a></p>
+    <p class="auth-switch">Pas encore de compte ? <a href="{{ url_for('auth.signup', next=request.args.get('next')) }}">Inscris-toi</a></p>
   </div>
 </section>
 {% endblock %}

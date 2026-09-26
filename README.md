@@ -1,215 +1,71 @@
-# ViralVI — Générateur de scripts TikTok viraux sur GTA 6
+# CopyLab — simulateur de copy trading (démo, argent fictif)
 
-SaaS complet (multi-comptes, abonnements) pour générer des scripts TikTok
-sur l'actualité de GTA 6, avec un score de viralité détaillé et un fil
-d'actualités renouvelé chaque jour.
+Application web pour **s'entraîner au copy trading sans risque** : on parcourt un
+classement de wallets, on colle l'adresse d'un wallet, et une simulation démarre avec
+un solde **fictif**. Aucun dépôt n'est possible, aucun vrai wallet n'est connecté,
+aucune transaction réelle n'est passée.
 
-⚠️ **Non affilié à Rockstar Games / Take-Two Interactive.** « GTA 6 »,
-« Grand Theft Auto » et « Vice City » sont des marques déposées de leurs
-propriétaires respectifs. Le nom, le logo et la charte graphique de
-ViralVI sont volontairement une création originale *inspirée* de
-l'ambiance néon de Vice City — aucun asset officiel n'est utilisé. Garde
-ce disclaimer visible sur le site (déjà en pied de page) pour rester dans
-un usage de fan/outil communautaire raisonnable.
+> Anciennement « ViralVI » (générateur de scripts TikTok GTA 6). L'ancienne version est
+> conservée dans le tag Git `legacy-gta6-saas`.
 
-## Pourquoi Flask (et pas Next.js) ?
+## Ce que fait l'app
 
-C'est un choix pragmatique : Flask + SQLite ne demandent aucune étape de
-build front-end, se déploient sur à peu près n'importe quel hébergeur
-Python (Render, Railway, Fly.io, PythonAnywhere, VPS classique...), et
-toutes les dépendances utilisées (`Flask`, `Werkzeug`, `requests`) sont
-minimales et stables. Le code est structuré en blueprints, facile à
-migrer vers Postgres ou vers une stack front séparée plus tard si besoin.
+- **Classement de traders** (7J / 30J, tri par PnL ou win rate) avec courbes de performance.
+- **Coller un wallet** (adresse Solana ou EVM `0x…`) : ouvre le profil du wallet et lance la simulation.
+- **Simulation de copie** : solde fictif (1 000 / 10 000 / 100 000 $), part du capital par trade
+  (5 à 50 %), frais + slippage simulés (0,8 % par côté).
+  - *En direct* : le temps est accéléré (×300, ×1 200, ×6 000), les trades du wallet sont copiés
+    au fil de l'eau, jusqu'à 90 jours simulés.
+  - *Backtest* : rejoue instantanément les 30 derniers jours du wallet.
+- Comptes utilisateurs (email + mot de passe) pour enregistrer ses simulations.
 
-## Fonctionnalités
+## ⚠️ Les données sont simulées
 
-- **Comptes multi-utilisateurs** : inscription / connexion (mot de passe
-  hashé, sessions sécurisées), plan Free (5 scripts/mois) et Pro
-  (illimité).
-- **Générateur de scripts** : sujet libre ou actu du fil, angle éditorial
-  (leak, comparaison GTA5/GTA6, personnages, carte, prix, réaction
-  trailer...), ton (choc, humour, analyse, leak exclusif). Renvoie 3
-  variantes classées par score.
-- **Score de viralité (0-100)**, expliqué et actionnable : accroche,
-  tension/émotion, rythme, pertinence de l'actu, appel à l'action,
-  hashtags — avec des conseils concrets pour chaque script.
-- **Mode IA optionnel** : l'utilisateur colle sa propre clé API
-  Anthropic (jamais stockée côté serveur — uniquement en mémoire le temps
-  de la requête, et en `localStorage` côté navigateur s'il le souhaite)
-  pour une génération plus fine sur la même échelle de score.
-- **Fil d'actualités GTA 6**, pré-rempli avec 10 actus réelles (vérifiées
-  fin août 2026 : sortie le 19 novembre 2026, Extended Look Netflix,
-  leaks, carte Leonida, personnages Lucia & Jason...), complété
-  automatiquement chaque jour (voir plus bas).
-- **Abonnement Stripe** (scaffold complet, mode démo si pas configuré).
-- **Design "Vice City Neon"** : palette rose/cyan/violet sur fond
-  sombre, entièrement en CSS custom (`static/css/theme.css`), sans
-  dépendance à un framework front.
+Le « track record » d'un wallet est **généré de façon déterministe à partir de son adresse**
+(`static/js/engine.js`) : même adresse → mêmes trades. Ce ne sont **pas** les vraies
+transactions du wallet. L'interface l'indique partout. Pour brancher de vraies données
+on-chain (Helius, Birdeye, Moralis, Alchemy…), remplacer `tradesBetween()` dans `engine.js`
+par un fournisseur qui renvoie les vrais trades ; le reste (simulation, PnL, graphiques)
+ne change pas.
 
-## Base de données
+## Architecture
 
-L'app tourne sur **PostgreSQL** (et non plus SQLite) pour permettre un
-déploiement serverless. Il te faut une base Postgres : **Neon**
-(neon.tech, gratuit), **Vercel Postgres** (onglet Storage du projet
-Vercel), Supabase, ou un Postgres local.
+```
+app.py            factory Flask (routes /, /healthz, 404)
+auth.py           inscription / connexion / déconnexion (paramètre ?next=)
+auth_utils.py     hash mot de passe, utilisateur courant, @login_required
+sim.py            pages (/traders, /trader/<wallet>, /app, /sim/<id>) + API /api/simulations
+db.py             accès PostgreSQL (psycopg 3)
+schema.sql        tables users + simulations
+static/js/engine.js   moteur de simulation déterministe (aussi testable sous Node)
+static/js/ui.js       formats, avatars, graphiques SVG
+static/js/app.js      logique des pages
+tests/engine.test.js  tests du moteur (node tests/engine.test.js)
+```
 
-Le schéma et le fil d'actus GTA 6 initial sont créés **automatiquement au
-premier démarrage** si la base est vide (voir `db.init_db`). Aucune étape
-de migration manuelle.
+Le serveur ne stocke que les **paramètres** d'une simulation (wallet, solde, part par trade,
+vitesse, heure de départ). L'état (positions, PnL, courbe) est recalculé côté client à
+partir de ces paramètres : pas de worker, pas de cron, rien de lourd côté serveur.
 
-## Démarrage rapide (en local)
+## Déploiement (Vercel + Postgres)
+
+Variables d'environnement :
+
+| Nom | Rôle |
+|---|---|
+| `APP_SECRET_KEY` | signature des sessions |
+| `DATABASE_URL` (ou `POSTGRES_URL`, y compris préfixée par l'intégration Neon) | base PostgreSQL |
+
+Le schéma est créé automatiquement au premier démarrage (`db.init_db`). Les anciennes
+tables de la version GTA 6 (`news_items`, `scripts`) ne sont plus utilisées ; tu peux les
+supprimer à la main si tu veux nettoyer la base.
+
+## Lancer en local
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate        # Windows : .venv\Scripts\activate
+python -m venv .venv && source .venv/bin/activate   # Windows : .venv\Scripts\activate
 pip install -r requirements.txt
-
-export DATABASE_URL="postgresql://user:pass@host/db?sslmode=require"
-export SECRET_KEY="une-valeur-aléatoire"
-
-python app.py
-# -> http://127.0.0.1:5000
+export DATABASE_URL="postgresql://…" APP_SECRET_KEY="dev"
+python app.py    # http://127.0.0.1:5000
+node tests/engine.test.js
 ```
-
-## Déploiement sur Vercel
-
-Le projet est prêt pour Vercel (`vercel.json` + `api/index.py`).
-
-1. **Crée une base Postgres** : le plus simple est l'onglet **Storage** du
-   projet Vercel → *Create Database* → Postgres. Les variables
-   `DATABASE_URL` / `POSTGRES_URL` sont alors injectées automatiquement.
-   (Sinon : crée une base sur neon.tech et ajoute `DATABASE_URL` à la
-   main dans *Settings → Environment Variables*, en utilisant la chaîne
-   **poolée** `...-pooler...`.)
-2. **Ajoute les variables d'environnement** (Settings → Environment
-   Variables) :
-   - `SECRET_KEY` : `python -c "import secrets; print(secrets.token_hex(32))"`
-   - `APP_BASE_URL` : `https://ton-projet.vercel.app`
-   - `ADMIN_REFRESH_TOKEN` : un token long et secret (pour l'actu quotidienne)
-   - Stripe (optionnel) : `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`,
-     `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`
-3. **Déploie** :
-   ```bash
-   npx vercel login
-   npx vercel --prod
-   ```
-   ou connecte le repo GitHub dans le dashboard Vercel.
-4. Au premier chargement, le schéma et les 10 actus GTA 6 sont créés
-   automatiquement. Pour re-seeder manuellement une base :
-   `vercel env pull .env && python scripts/seed_news.py`.
-
-> Note : `instance/viralvi.sqlite3` (ancienne base SQLite) n'est plus
-> utilisé et est exclu du déploiement (`.vercelignore`).
-
-Crée un compte depuis l'interface, génère quelques scripts, et regarde
-l'historique se remplir. Sans configuration Stripe, le bouton "Passer
-Pro" bascule directement le compte en Pro (mode démo) pour tester tout le
-parcours.
-
-## Déploiement sur un autre hébergeur (Render, Railway, VPS...)
-
-L'app reste une appli WSGI classique :
-
-1. `pip install -r requirements.txt gunicorn`
-2. `gunicorn -w 4 -b 0.0.0.0:8000 app:app`
-3. Variables d'environnement : `DATABASE_URL` (Postgres), `SECRET_KEY`,
-   `APP_BASE_URL`, `ADMIN_REFRESH_TOKEN` (voir `.env.example`).
-4. Reverse proxy (Nginx ou le load balancer de l'hébergeur) avec HTTPS.
-
-## Brancher Stripe (abonnement Pro)
-
-1. Crée un **produit** "ViralVI Pro" avec un **prix récurrent mensuel**
-   (19 €). Copie l'ID du prix (`price_…`).
-2. Ajoute les variables d'environnement :
-   - `STRIPE_SECRET_KEY` — `sk_test_…` (mode test) ou `sk_live_…` (prod)
-   - `STRIPE_PRICE_ID` — le `price_…` ci-dessus
-   - `STRIPE_WEBHOOK_SECRET` — `whsec_…` (étape 3)
-3. Crée un **webhook** vers `https://ton-domaine/billing/webhook`,
-   écoutant `checkout.session.completed` et
-   `customer.subscription.deleted`. Copie son *signing secret* dans
-   `STRIPE_WEBHOOK_SECRET`.
-4. Redéploie.
-
-`is_configured()` teste la présence de `STRIPE_SECRET_KEY` +
-`STRIPE_PRICE_ID` : dès qu'elles sont là, le bouton « M'abonner » ouvre
-un vrai Stripe Checkout. Au retour, `/billing/success?session_id=…`
-confirme le paiement immédiatement (le webhook sert de doublon fiable et
-gère les résiliations).
-
-`engine/stripe_client.py` fait des appels REST directs (pas de SDK). Pour
-une prod critique, tu peux passer au SDK officiel `stripe` et à
-`stripe.Webhook.construct_event`.
-
-Sans ces variables, le site reste en **mode démo** : le bouton
-« M'abonner » active l'abonnement sans paiement réel.
-
-### Tester d'abord en mode test
-
-Utilise les clés `sk_test_…` + un prix créé en mode test + le webhook en
-mode test. Carte de test : `4242 4242 4242 4242`, date future, CVC
-quelconque. Une fois le tunnel validé, bascule sur les clés `live`.
-
-## Actus GTA 6 automatiques chaque jour
-
-Le fil se rafraîchit tout seul via l'actu GTA 6 de Google News (flux RSS
-public, aucune clé API). Les doublons (même URL) sont ignorés.
-
-**Sur Vercel — cron natif (recommandé, déjà configuré).**
-`vercel.json` déclare un cron qui appelle `GET /news/api/cron` chaque jour
-à 7h UTC. Rien à installer. Pour sécuriser l'endpoint :
-
-1. Génère une valeur aléatoire et ajoute la variable d'environnement
-   `CRON_SECRET` (Vercel l'enverra automatiquement dans l'en-tête
-   `Authorization: Bearer …` de ses appels cron).
-2. Redéploie. Le cron apparaît dans l'onglet **Cron Jobs** du projet ;
-   tu peux le déclencher à la main pour tester.
-
-> Plan Hobby : 1 exécution/jour maximum — ce qui correspond exactement au
-> besoin ici.
-
-**Autre hébergeur — cron classique :**
-
-```cron
-0 8 * * * cd /chemin/vers/viralvi && APP_BASE_URL=https://ton-domaine ADMIN_REFRESH_TOKEN=xxx python3 scripts/fetch_news.py
-```
-
-Ce script poste sur `POST /news/api/refresh` (protégé par
-`ADMIN_REFRESH_TOKEN`). Aperçu sans rien envoyer :
-`python scripts/fetch_news.py --dry-run`.
-
-## Structure du projet
-
-```
-app.py                 point d'entrée Flask (factory + routes landing/404)
-config.py               configuration (variables d'env)
-db.py                    accès SQLite (connexion, requêtes)
-schema.sql               schéma de la base
-auth.py / auth_utils.py  inscription / connexion / sessions
-dashboard.py             générateur, sauvegarde, historique
-news.py                  fil d'actus + endpoint d'admin (refresh quotidien)
-billing.py               pricing, upgrade, webhook Stripe
-engine/
-  virality.py            algorithme de scoring (0-100, expliqué)
-  generator.py            banques de templates de scripts par angle/ton
-  ai_client.py             appel optionnel à l'API Anthropic
-  stripe_client.py         appels REST Stripe (checkout + webhook)
-scripts/
-  seed_news.py             actus réelles initiales (10 items, août 2026)
-  fetch_news.py             récupération quotidienne (RSS Google News)
-templates/               pages Jinja2
-static/css/theme.css      design system "Vice City Neon"
-static/js/app.js          génération AJAX, gauge de score, copier/sauver
-.github/workflows/        GitHub Action pour l'actu quotidienne
-```
-
-## Prochaines étapes suggérées
-
-- Ajouter la vérification d'email et la réinitialisation de mot de passe.
-- Passer SQLite → Postgres si tu vises un vrai volume d'utilisateurs.
-- Ajouter un vrai back-office admin (actuellement, seul l'endpoint
-  `/news/api/refresh` existe côté "admin", protégé par token).
-- Ajouter un rate-limiting (ex : Flask-Limiter) sur `/auth/*` et
-  `/app/generate` pour éviter les abus.
-- Écrire des tests automatisés (le projet a été validé manuellement via
-  le client de test Flask — voir historique de la conversation — mais
-  aucune suite `pytest` n'est encore committée).

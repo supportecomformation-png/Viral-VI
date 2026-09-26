@@ -1,9 +1,9 @@
 from datetime import date
 
-from flask import Flask, render_template, g
+from flask import Flask, render_template, g, jsonify
 
 from config import Config
-from db import init_db, query_one, query_all
+from db import init_db, query_one
 from auth_utils import load_logged_in_user
 
 
@@ -12,14 +12,10 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
 
     from auth import bp as auth_bp
-    from dashboard import bp as dashboard_bp
-    from news import bp as news_bp
-    from billing import bp as billing_bp
+    from sim import bp as sim_bp, DEMO_TRADERS
 
     app.register_blueprint(auth_bp)
-    app.register_blueprint(dashboard_bp)
-    app.register_blueprint(news_bp)
-    app.register_blueprint(billing_bp)
+    app.register_blueprint(sim_bp)
 
     init_db(app)
 
@@ -29,29 +25,18 @@ def create_app(config_class=Config):
 
     @app.context_processor
     def inject_globals():
-        release = date(2026, 11, 19)
-        days_left = max((release - date.today()).days, 0)
         return {
             "current_user": g.get("user"),
-            "days_left": days_left,
             "current_year": date.today().year,
-            "pro_price": app.config["PRO_PLAN_PRICE_EUR"],
         }
 
     @app.route("/")
     def landing():
-        from news import _self_heal_if_stale
-        _self_heal_if_stale()
-        news_count = query_one("SELECT COUNT(*) AS c FROM news_items")["c"]
-        latest_news = query_all(
-            "SELECT * FROM news_items ORDER BY published_at DESC, id DESC LIMIT 4"
-        )
-        return render_template("landing.html", news_count=news_count, latest_news=latest_news)
+        return render_template("landing.html", traders=DEMO_TRADERS)
 
     @app.route("/healthz")
     def healthz():
         """Sonde de santé : renvoie 200 si la base répond, 503 sinon."""
-        from flask import jsonify
         try:
             query_one("SELECT 1")
             return jsonify(status="ok")
