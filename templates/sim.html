@@ -2,6 +2,7 @@
 {% block title %}Simulation — CopyLab{% endblock %}
 {% block page %}sim{% endblock %}
 {% block content %}
+<script type="application/json" id="sim-boot">{{ sim_boot | tojson }}</script>
 <section class="container sim-head" id="sim-root" data-sim-id="{{ sim_id }}">
   <a href="{{ url_for('sim.my_simulations') }}" class="back-link">← Mes Trades</a>
   <div class="sim-title">

@@ -518,3 +518,32 @@ body[data-page="trader"] {
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; overscroll-behavior: none;
 }
 body[data-page="trader"] button, body[data-page="trader"] a { touch-action: manipulation; }
+
+/* ---- confirmation d'ordre (écran de copie) ---- */
+.order-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(8,10,14,.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:0;transition:opacity .2s ease}
+.order-overlay[hidden]{display:none}
+.order-overlay.show{opacity:1}
+.order-card{text-align:center;padding:24px;transform:translateY(12px) scale(.96);transition:transform .35s cubic-bezier(.2,.9,.3,1.2)}
+.order-overlay.show .order-card{transform:none}
+.order-badge{position:relative;width:112px;height:112px;margin:0 auto 22px}
+.order-badge svg{position:absolute;inset:0;width:100%;height:100%;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.order-ring circle{stroke:#3ddc97;stroke-width:6;stroke-dasharray:276;stroke-dashoffset:207;transform-origin:50% 50%;animation:order-spin .9s linear infinite}
+.order-overlay.done .order-ring circle{animation:order-fill .5s ease-out forwards}
+.order-check path{stroke:#3ddc97;stroke-width:8;stroke-dasharray:80;stroke-dashoffset:80}
+.order-overlay.done .order-check path{animation:order-draw .4s .35s ease-out forwards}
+.order-overlay.done .order-badge{animation:order-pop .5s .3s ease-out}
+.order-overlay.done .order-badge::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid #3ddc97;opacity:0;animation:order-pulse .9s .4s ease-out}
+.order-title{margin:0;font-size:1.35rem;font-weight:700}
+.order-amount{margin:8px 0 0;font-size:2rem;font-weight:800;color:#3ddc97}
+.order-sub{margin:6px 0 0;opacity:.7}
+@keyframes order-spin{to{transform:rotate(360deg)}}
+@keyframes order-fill{from{stroke-dashoffset:207}to{stroke-dashoffset:0}}
+@keyframes order-draw{to{stroke-dashoffset:0}}
+@keyframes order-pop{0%{transform:scale(1)}50%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes order-pulse{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(1.5)}}
+@media (prefers-reduced-motion:reduce){
+  .order-ring circle,.order-overlay.done .order-badge,.order-overlay.done .order-badge::after{animation:none}
+  .order-overlay.done .order-ring circle{stroke-dashoffset:0}
+  .order-overlay.done .order-check path{animation:none;stroke-dashoffset:0}
+  .order-card{transition:none}
+}

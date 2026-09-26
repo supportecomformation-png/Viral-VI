@@ -603,11 +603,37 @@
       });
     }
 
+    // ----- animation de confirmation de l'ordre
+    const overlay = el("order-overlay");
+    const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+    let busy = false;
+
+    function showOrder(amount) {
+      const nameEl = document.querySelector(".cs-name strong");
+      overlay.classList.remove("done");
+      el("order-title").textContent = "Envoi de l'ordre…";
+      el("order-amount").textContent = U.usd(amount);
+      el("order-sub").textContent = "Copie de " + (nameEl ? nameEl.textContent : "ce wallet");
+      overlay.hidden = false;
+      void overlay.offsetWidth;
+      overlay.classList.add("show");
+    }
+
+    function hideOrder() {
+      overlay.classList.remove("show", "done");
+      overlay.hidden = true;
+    }
+
     async function start() {
+      if (busy) return;
       const amount = Math.round(amountValue() * 100) / 100;
       if (!ready || amount < MIN_AMOUNT) return;
+      busy = true;
       errEl.hidden = true;
       startBtn.disabled = true;
+      if (loggedIn) showOrder(amount);
+      const startedAt = Date.now();
       try {
         const data = await fetch("/api/simulations", {
           method: "POST",
@@ -633,8 +659,18 @@
           if (!res.ok) throw new Error(body.message || "Impossible de lancer la copie.");
           return body;
         });
-        if (data) window.location.href = "/sim/" + data.simulation.id;
+        if (!data) return;
+        // Laisse au moins un instant à l'animation "envoi" avant la validation.
+        if (!reduceMotion) await wait(Math.max(0, 700 - (Date.now() - startedAt)));
+        if (overlay.hidden) showOrder(amount);
+        el("order-title").textContent = "Copie confirmée";
+        overlay.classList.add("done");
+        if (navigator.vibrate) { try { navigator.vibrate(30); } catch (e) {} }
+        await wait(reduceMotion ? 600 : 1300);
+        window.location.href = "/sim/" + data.simulation.id;
       } catch (err) {
+        hideOrder();
+        busy = false;
         errEl.textContent = err.message;
         errEl.hidden = false;
         refreshAmount();
@@ -811,7 +847,9 @@
       }
     }
 
-    api("/api/simulations/" + id).then(function (data) {
+    let boot = null;
+    try { boot = JSON.parse(el("sim-boot").textContent); } catch (e) {}
+    (boot ? Promise.resolve(boot) : api("/api/simulations/" + id)).then(function (data) {
       setSim(data);
       drawStatic();
       draw();

@@ -1,6 +1,8 @@
+import hashlib
+import os
 from datetime import date
 
-from flask import Flask, render_template, g, jsonify
+from flask import Flask, render_template, g, jsonify, request, url_for
 
 from config import Config
 from db import init_db, query_one
@@ -21,6 +23,33 @@ def create_app(config_class=Config):
 
     init_db(app)
 
+    _asset_versions = {}
+
+    def asset(path):
+        """URL d'un fichier statique avec une empreinte de contenu (?v=…).
+
+        Le CDN peut ainsi le garder en cache un an : l'URL change dès que le fichier change.
+        """
+        version = _asset_versions.get(path)
+        if version is None:
+            try:
+                with open(os.path.join(app.static_folder, path), "rb") as f:
+                    version = hashlib.sha1(f.read()).hexdigest()[:10]
+            except OSError:
+                version = ""
+            _asset_versions[path] = version
+        url = url_for("static", filename=path)
+        return "%s?v=%s" % (url, version) if version else url
+
+    app.jinja_env.globals["asset"] = asset
+
+    @app.after_request
+    def _cache_static(resp):
+        # Fichiers versionnés (?v=empreinte) : cache navigateur + CDN d'un an.
+        if request.endpoint == "static" and request.args.get("v"):
+            resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return resp
+
     @app.before_request
     def _load_user():
         load_logged_in_user()
@@ -39,42 +68,12 @@ def create_app(config_class=Config):
 
     @app.route("/healthz")
     def healthz():
-        """Sonde de santé : renvoie 200 si la base répond, 503 sinon.
-
-        ?timing=1 : mesure (en ms) une connexion neuve puis 3 requêtes, et indique la
-        région du serveur de base de données (jamais l'hôte complet ni les identifiants).
-        """
-        from flask import request
-        if request.args.get("timing"):
-            return _db_timing()
+        """Sonde de santé : renvoie 200 si la base répond, 503 sinon."""
         try:
             query_one("SELECT 1")
             return jsonify(status="ok")
         except Exception:
             return jsonify(status="degraded"), 503
-
-    def _db_timing():
-        import re, time
-        from urllib.parse import urlparse
-        from db import _connect
-        out = {}
-        host = urlparse(app.config.get("DATABASE_URL") or "").hostname or ""
-        m = re.search(r".([a-z0-9-]+).(?:aws|azure).neon.tech", host)
-        out["db_region"] = m.group(1) if m else "inconnue"
-        try:
-            t0 = time.perf_counter()
-            conn = _connect(autocommit=True)
-            out["connect_ms"] = round((time.perf_counter() - t0) * 1000)
-            times = []
-            for _ in range(3):
-                t1 = time.perf_counter()
-                conn.execute("SELECT 1").fetchone()
-                times.append(round((time.perf_counter() - t1) * 1000))
-            out["query_ms"] = times
-            conn.close()
-        except Exception as exc:
-            out["error"] = type(exc).__name__
-        return jsonify(out)
 
     @app.errorhandler(404)
     def not_found(e):

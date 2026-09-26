@@ -163,9 +163,12 @@ def my_simulations():
 @bp.route("/sim/<int:sim_id>")
 @login_required
 def simulation_page(sim_id):
-    if _owned_simulation(sim_id) is None:
+    row = _owned_simulation(sim_id)
+    if row is None:
         abort(404)
-    return render_template("sim.html", sim_id=sim_id)
+    # Données embarquées : la page n'a pas besoin d'un aller-retour API supplémentaire.
+    return render_template("sim.html", sim_id=sim_id,
+                           sim_boot={"simulation": _serialize(row), "server_now": time.time()})
 
 
 # ------------------------------------------------------------------ API
