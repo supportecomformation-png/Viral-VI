@@ -511,3 +511,10 @@ body[data-page="trader"] .site-footer { display: none; }
 body[data-page="trader"] main { padding-bottom: 12px; }
 body[data-page="trader"] .site-header { display: none; }
 body[data-page="trader"] .copy-screen { padding-top: 18px; }
+
+/* Écran de copie : aucun zoom (double-tap ni pincement), pas de sélection de texte au toucher. */
+html:has(body[data-page="trader"]), body[data-page="trader"] { touch-action: pan-x pan-y; }
+body[data-page="trader"] {
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; overscroll-behavior: none;
+}
+body[data-page="trader"] button, body[data-page="trader"] a { touch-action: manipulation; }

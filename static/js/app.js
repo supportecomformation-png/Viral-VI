@@ -423,6 +423,13 @@
     let network = root.getAttribute("data-network") || (chain === "solana" ? "solana" : "base");
     U.applyAvatars(document);
 
+    // Pas de zoom sur cet écran : pincement (iOS Safari envoie des événements "gesture")
+    // et double-tap (bloqué en CSS via touch-action, sans gêner les frappes rapides).
+    ["gesturestart", "gesturechange", "gestureend"].forEach(function (type) {
+      document.addEventListener(type, function (e) { e.preventDefault(); });
+    });
+    document.addEventListener("dblclick", function (e) { e.preventDefault(); });
+
     const el = function (id) { return document.getElementById(id); };
     const stateEl = el("trader-state");
     const padEl = el("copy-pad");
