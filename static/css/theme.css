@@ -509,3 +509,5 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 /* Écran de copie : rien sous l'interface de saisie (le pied de page reste sur les autres pages). */
 body[data-page="trader"] .site-footer { display: none; }
 body[data-page="trader"] main { padding-bottom: 12px; }
+body[data-page="trader"] .site-header { display: none; }
+body[data-page="trader"] .copy-screen { padding-top: 18px; }
