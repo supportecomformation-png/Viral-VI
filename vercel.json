@@ -15,7 +15,8 @@
           "auth.py",
           "auth_utils.py",
           "sim.py",
-          "onchain.py"
+          "onchain.py",
+          "markets.py"
         ]
       }
     }

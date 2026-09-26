@@ -25,6 +25,27 @@
     return sign + Math.abs(v * 100).toFixed(d).replace(".", ",") + " %";
   }
 
+  // Prix d'un token : 2 décimales au-dessus de 1 $, davantage en dessous.
+  function price(v) {
+    if (v == null || !isFinite(v)) return "—";
+    if (v >= 1) return nf2.format(v) + " $";
+    if (v <= 0) return "0 $";
+    const digits = Math.min(10, Math.max(4, 2 - Math.floor(Math.log10(v))));
+    return v.toFixed(digits).replace(".", ",") + " $";
+  }
+
+  // Capitalisation : 1,6 T$ / 324 Md$ / 12 M$.
+  function compactUsd(v) {
+    if (v == null || !isFinite(v) || v <= 0) return "—";
+    const fmt = function (x, unit) {
+      return (x >= 100 ? nfInt.format(x) : x.toFixed(1).replace(".", ",")) + " " + unit;
+    };
+    if (v >= 1e12) return fmt(v / 1e12, "T$");
+    if (v >= 1e9) return fmt(v / 1e9, "Md$");
+    if (v >= 1e6) return fmt(v / 1e6, "M$");
+    return nfInt.format(v) + " $";
+  }
+
   function cls(v) {
     return v > 0.00005 ? "up" : v < -0.00005 ? "down" : "";
   }
@@ -181,6 +202,8 @@
   root.UI = {
     esc: esc,
     usd: usd,
+    price: price,
+    compactUsd: compactUsd,
     pct: pct,
     cls: cls,
     fmtSimTime: fmtSimTime,

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}CopyLab — Accueil{% endblock %}
+{% block page %}home{% endblock %}
+{% block content %}
+<section class="container home-top">
+  <div class="balance-card">
+    <div>
+      <div class="balance-label">Solde <span class="pill pill-sm">Argent fictif</span></div>
+      <div class="balance-value" id="balance-value">0<span class="cents">,00 $</span></div>
+    </div>
+    <button type="button" class="btn btn-primary" id="open-deposit">Déposer</button>
+  </div>
+
+  <form class="paste-form" autocomplete="off" novalidate>
+    <input type="text" class="paste-input" placeholder="Colle une adresse de wallet à copier (Solana ou 0x…)" aria-label="Adresse du wallet" spellcheck="false">
+    <button type="submit" class="btn btn-primary">Copier ce wallet</button>
+  </form>
+  <p class="paste-error" hidden></p>
+</section>
+
+<section class="container">
+  <div class="section-head">
+    <h2>Meilleurs traders de la semaine</h2>
+    <a href="{{ url_for('sim.traders') }}" class="link-arrow">Tout voir →</a>
+  </div>
+  <div class="rail" id="top-traders"></div>
+</section>
+
+<section class="container markets">
+  <div class="tabs" id="market-tabs" role="tablist">
+    <button type="button" data-tab="favs">Favoris</button>
+    <button type="button" data-tab="tokens" class="active">Tokens</button>
+  </div>
+
+  <div class="market-tools">
+    <input type="search" id="market-search" class="search" placeholder="Rechercher un token…" aria-label="Rechercher un token" autocomplete="off">
+    <div class="chips-scroll" id="market-filters">
+      <button type="button" data-filter="crypto" class="active">Cryptomonnaies</button>
+      <button type="button" data-filter="trending">Tendances</button>
+      <button type="button" data-filter="volume">Plus échangés</button>
+      <button type="button" data-filter="losers">Baisses</button>
+    </div>
+  </div>
+
+  <div id="market-list" class="coin-list" aria-live="polite">
+    <p class="empty-note"><span class="spinner"></span> Chargement des prix…</p>
+  </div>
+  <div class="center-cta" id="market-more" hidden>
+    <button type="button" class="btn btn-ghost btn-sm" id="market-more-btn">Afficher plus</button>
+  </div>
+  <p class="fine" id="market-note"></p>
+</section>
+
+<div class="sheet-backdrop" id="deposit-sheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="deposit-title">
+    <div class="sheet-head">
+      <h3 id="deposit-title">Déposer des fonds fictifs</h3>
+      <button type="button" class="icon-btn" id="close-deposit" aria-label="Fermer">Fermer</button>
+    </div>
+    <p class="fine">Argent fictif uniquement : aucun paiement, aucun vrai fonds. Sert à t'entraîner.</p>
+    <div class="chips" id="deposit-chips">
+      <button type="button" data-amount="1000">1 000 $</button>
+      <button type="button" data-amount="10000" class="active">10 000 $</button>
+      <button type="button" data-amount="100000">100 000 $</button>
+    </div>
+    <label class="field-label" for="deposit-custom">Ou un autre montant</label>
+    <input type="number" id="deposit-custom" class="search" min="1" max="1000000" step="1" inputmode="numeric" placeholder="Montant en $ (fictif)">
+    <p class="form-error" id="deposit-error" hidden></p>
+    <button type="button" class="btn btn-primary btn-block btn-lg" id="confirm-deposit">Ajouter à mon solde</button>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>window.DEMO_TRADERS = {{ traders|tojson }};</script>
+{% endblock %}

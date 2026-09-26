@@ -55,3 +55,11 @@ CREATE TABLE IF NOT EXISTS wallet_cache (
 );
 
 CREATE INDEX IF NOT EXISTS idx_wallet_cache_time ON wallet_cache(fetched_at DESC);
+
+-- Cache des prix des cryptomonnaies (page d'accueil), partagé entre instances.
+CREATE TABLE IF NOT EXISTS market_cache (
+    id SERIAL PRIMARY KEY,
+    key TEXT NOT NULL UNIQUE,
+    payload TEXT NOT NULL,
+    fetched_at DOUBLE PRECISION NOT NULL
+);

@@ -40,7 +40,7 @@
 
   // ---------------------------------------------------------------- nav active
   (function markNav() {
-    const map = { landing: "", traders: "traders", trader: "traders", app: "app", sim: "app" };
+    const map = { home: "home", traders: "traders", trader: "traders", app: "app", sim: "app" };
     const key = map[page];
     if (!key) return;
     const a = document.querySelector('.bottom-nav [data-nav="' + key + '"]');
@@ -113,19 +113,6 @@
     return out;
   }
 
-  function initLanding() {
-    const el = $("#landing-traders");
-    const traders = window.DEMO_TRADERS || [];
-    if (!el || !traders.length) return;
-    const all = computeAll(traders)[30];
-    const ranked = traders.slice().sort(function (a, b) {
-      return all[b.wallet].pnlPct - all[a.wallet].pnlPct;
-    }).slice(0, 3);
-    el.innerHTML = ranked.map(function (t, i) {
-      return traderRow(t, all[t.wallet], i + 1);
-    }).join("");
-  }
-
   function initTraders() {
     const listEl = $("#trader-list");
     const traders = window.DEMO_TRADERS || [];
@@ -192,6 +179,234 @@
           realList.innerHTML = '<p class="empty-note">Classement indisponible pour le moment.</p>';
         });
     }
+  }
+
+  // ---------------------------------------------------------------- accueil
+  const STAR_PATH = "M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8L3.5 9.7l5.9-.9z";
+
+  function initHome() {
+    // ----- solde fictif (stocké dans le navigateur : aucun vrai fonds, aucun serveur)
+    const BAL_KEY = "copylab_demo_balance";
+    const MAX_BALANCE = 10000000;
+    const MAX_DEPOSIT = 1000000;
+    const balEl = document.getElementById("balance-value");
+
+    function readBalance() {
+      try {
+        const v = parseFloat(localStorage.getItem(BAL_KEY));
+        return isFinite(v) && v > 0 ? Math.min(v, MAX_BALANCE) : 0;
+      } catch (e) {
+        return 0;
+      }
+    }
+    function writeBalance(v) {
+      try { localStorage.setItem(BAL_KEY, String(v)); } catch (e) {}
+    }
+    function renderBalance() {
+      const v = readBalance();
+      const whole = Math.floor(v);
+      const cents = Math.round((v - whole) * 100);
+      balEl.innerHTML = whole.toLocaleString("fr-FR") + '<span class="cents">,' + (cents < 10 ? "0" : "") + cents + " $</span>";
+    }
+    renderBalance();
+
+    const sheet = document.getElementById("deposit-sheet");
+    const chips = document.getElementById("deposit-chips");
+    const custom = document.getElementById("deposit-custom");
+    const depErr = document.getElementById("deposit-error");
+    let chosen = 10000;
+    function openSheet() { depErr.hidden = true; custom.value = ""; sheet.hidden = false; }
+    function closeSheet() { sheet.hidden = true; }
+    document.getElementById("open-deposit").addEventListener("click", openSheet);
+    document.getElementById("close-deposit").addEventListener("click", closeSheet);
+    sheet.addEventListener("click", function (e) { if (e.target === sheet) closeSheet(); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeSheet(); });
+    chips.addEventListener("click", function (e) {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+      chips.querySelectorAll("button").forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      chosen = parseFloat(btn.getAttribute("data-amount"));
+      custom.value = "";
+    });
+    custom.addEventListener("input", function () {
+      if (custom.value) chips.querySelectorAll("button").forEach(function (b) { b.classList.remove("active"); });
+    });
+    document.getElementById("confirm-deposit").addEventListener("click", function () {
+      const amount = custom.value ? parseFloat(custom.value) : chosen;
+      let msg = null;
+      if (!isFinite(amount) || amount < 1) msg = "Entre un montant d'au moins 1 $.";
+      else if (amount > MAX_DEPOSIT) msg = "Maximum " + MAX_DEPOSIT.toLocaleString("fr-FR") + " $ par dépôt fictif.";
+      else if (readBalance() + amount > MAX_BALANCE) msg = "Solde fictif maximal atteint (" + MAX_BALANCE.toLocaleString("fr-FR") + " $).";
+      if (msg) {
+        depErr.textContent = msg;
+        depErr.hidden = false;
+        return;
+      }
+      writeBalance(Math.round((readBalance() + amount) * 100) / 100);
+      renderBalance();
+      closeSheet();
+    });
+
+    // ----- meilleurs traders de la semaine (track records simulés des traders vedettes)
+    const railEl = document.getElementById("top-traders");
+    const traders = window.DEMO_TRADERS || [];
+    const now = nowSec();
+    railEl.innerHTML = traders.map(function (t) {
+      return { t: t, s: E.traderStats(t.wallet, now, 7) };
+    }).sort(function (a, b) { return b.s.pnlPct - a.s.pnlPct; }).slice(0, 8).map(function (x) {
+      return (
+        '<a class="rail-card" href="/trader/' + encodeURIComponent(x.t.wallet) + '">' +
+        '<span class="rail-head"><span class="avatar" style="' + U.avatarStyle(x.t.wallet) + '"></span>' + U.esc(x.t.handle) + "</span>" +
+        '<span class="rail-pnl ' + U.cls(x.s.pnlPct) + '">' + U.pct(x.s.pnlPct, Math.abs(x.s.pnlPct) >= 10 ? 0 : 1) + "</span>" +
+        "<small>PnL 7J</small></a>"
+      );
+    }).join("");
+
+    // ----- marchés : liste des cryptomonnaies
+    const listEl = document.getElementById("market-list");
+    const moreWrap = document.getElementById("market-more");
+    const noteEl = document.getElementById("market-note");
+    const searchEl = document.getElementById("market-search");
+
+    function readFavs() {
+      try { return new Set(JSON.parse(localStorage.getItem("copylab_favs") || "[]")); } catch (e) { return new Set(); }
+    }
+    const state = { tab: "tokens", filter: "crypto", query: "", limit: 100, coins: [], prev: {}, favs: readFavs(), ready: false };
+    function writeFavs() {
+      try { localStorage.setItem("copylab_favs", JSON.stringify(Array.from(state.favs))); } catch (e) {}
+    }
+
+    function visibleCoins() {
+      let list = state.coins.slice();
+      if (state.tab === "favs") list = list.filter(function (c) { return state.favs.has(c.id); });
+      const q = state.query.trim().toLowerCase();
+      if (q) {
+        list = list.filter(function (c) {
+          return c.symbol.toLowerCase().indexOf(q) !== -1 || c.name.toLowerCase().indexOf(q) !== -1;
+        });
+      } else if (state.filter !== "crypto") {
+        list = list.slice(0, 100);
+      }
+      const by = function (key, dir) {
+        list.sort(function (a, b) {
+          const x = a[key] == null ? -Infinity : a[key];
+          const y = b[key] == null ? -Infinity : b[key];
+          return dir > 0 ? y - x : x - y;
+        });
+      };
+      if (state.filter === "trending") by("change_24h", 1);
+      else if (state.filter === "volume") by("volume", 1);
+      else if (state.filter === "losers") by("change_24h", -1);
+      return list;
+    }
+
+    function row(c) {
+      const prev = state.prev[c.id];
+      const flash = prev != null && prev !== c.price ? (c.price > prev ? " flash-up" : " flash-down") : "";
+      const ch = c.change_24h;
+      const chHtml = ch == null
+        ? "<small>—</small>"
+        : '<small class="' + U.cls(ch) + '">' + (ch >= 0 ? "▲ " : "▼ ") + Math.abs(ch).toFixed(2).replace(".", ",") + " %</small>";
+      const on = state.favs.has(c.id);
+      return (
+        '<div class="coin-row' + flash + '">' +
+        '<button type="button" class="fav-btn' + (on ? " on" : "") + '" data-fav="' + U.esc(c.id) + '" aria-label="Favori ' + U.esc(c.symbol) + '">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + STAR_PATH + '" fill="' + (on ? "currentColor" : "none") + '" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>' +
+        '<span class="coin-icon" style="' + U.avatarStyle(c.id) + '"><span>' + U.esc((c.symbol || "?").charAt(0)) + "</span>" +
+        (c.image ? '<img src="' + U.esc(c.image) + '" alt="" loading="lazy" onerror="this.remove()">' : "") + "</span>" +
+        '<span class="coin-id"><strong>' + U.esc(c.symbol) + "</strong><small>" + U.esc(U.compactUsd(c.market_cap)) + " cap.</small></span>" +
+        '<span class="coin-price"><b>' + U.esc(U.price(c.price)) + "</b>" + chHtml + "</span></div>"
+      );
+    }
+
+    function render() {
+      if (!state.ready) return;
+      const list = visibleCoins();
+      if (!list.length) {
+        listEl.innerHTML = '<p class="empty-note">' + (state.tab === "favs" && !state.query
+          ? "Aucun favori pour l'instant : touche l'étoile d'un token pour l'ajouter."
+          : "Aucun token ne correspond.") + "</p>";
+        moreWrap.hidden = true;
+        return;
+      }
+      listEl.innerHTML = list.slice(0, state.limit).map(row).join("");
+      moreWrap.hidden = list.length <= state.limit;
+    }
+
+    function setActive(container, attr, value) {
+      container.querySelectorAll("button").forEach(function (b) {
+        b.classList.toggle("active", b.getAttribute(attr) === value);
+      });
+    }
+    document.getElementById("market-tabs").addEventListener("click", function (e) {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+      state.tab = btn.getAttribute("data-tab");
+      state.limit = 100;
+      setActive(this, "data-tab", state.tab);
+      render();
+    });
+    document.getElementById("market-filters").addEventListener("click", function (e) {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+      state.filter = btn.getAttribute("data-filter");
+      state.limit = 100;
+      setActive(this, "data-filter", state.filter);
+      render();
+    });
+    searchEl.addEventListener("input", function () {
+      state.query = searchEl.value;
+      state.limit = 100;
+      render();
+    });
+    listEl.addEventListener("click", function (e) {
+      const btn = e.target.closest("[data-fav]");
+      if (!btn) return;
+      const id = btn.getAttribute("data-fav");
+      if (state.favs.has(id)) state.favs.delete(id); else state.favs.add(id);
+      writeFavs();
+      render();
+    });
+    document.getElementById("market-more-btn").addEventListener("click", function () {
+      state.limit += 100;
+      render();
+    });
+
+    function load() {
+      return fetch("/api/markets", { credentials: "same-origin" })
+        .then(function (r) {
+          return r.json().then(function (body) {
+            if (!r.ok) throw new Error(body.message || "Prix indisponibles.");
+            return body;
+          });
+        })
+        .then(function (data) {
+          const prev = {};
+          state.coins.forEach(function (c) { prev[c.id] = c.price; });
+          state.prev = prev;
+          state.coins = data.coins || [];
+          state.ready = true;
+          const src = data.source === "coingecko" ? "CoinGecko" : "CoinPaprika";
+          const at = new Date(data.fetched_at * 1000).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+          noteEl.textContent = data.stale
+            ? "Prix en cache : le fournisseur est momentanément indisponible (dernière mise à jour à " + at + ")."
+            : "Prix en dollars via " + src + ", actualisés toutes les 30 s (dernière mise à jour à " + at + ").";
+          render();
+        })
+        .catch(function (err) {
+          if (state.ready) return; // on garde la dernière liste affichée
+          listEl.innerHTML = '<p class="empty-note">' + U.esc(err.message) +
+            ' <button type="button" class="btn btn-ghost btn-sm" id="market-retry">Réessayer</button></p>';
+          const retry = document.getElementById("market-retry");
+          if (retry) retry.addEventListener("click", function () {
+            listEl.innerHTML = '<p class="empty-note"><span class="spinner"></span> Chargement des prix…</p>';
+            load();
+          });
+        });
+    }
+    load();
+    setInterval(function () { if (!document.hidden) load(); }, 30000);
   }
 
   // ---------------------------------------------------------------- profil de wallet
@@ -663,7 +878,7 @@
 
   // ---------------------------------------------------------------- démarrage
   initPasteForms();
-  if (page === "landing") initLanding();
+  if (page === "home") initHome();
   else if (page === "traders") initTraders();
   else if (page === "trader") initTrader();
   else if (page === "app") initApp();

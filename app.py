@@ -13,9 +13,11 @@ def create_app(config_class=Config):
 
     from auth import bp as auth_bp
     from sim import bp as sim_bp, DEMO_TRADERS
+    from markets import bp as markets_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(sim_bp)
+    app.register_blueprint(markets_bp)
 
     init_db(app)
 
@@ -33,7 +35,7 @@ def create_app(config_class=Config):
 
     @app.route("/")
     def landing():
-        return render_template("landing.html", traders=DEMO_TRADERS)
+        return render_template("home.html", traders=DEMO_TRADERS)
 
     @app.route("/healthz")
     def healthz():

@@ -19,6 +19,7 @@
         <span class="brand-name">CopyLab</span>
       </a>
       <nav class="main-nav">
+        <a href="{{ url_for('landing') }}">Accueil</a>
         <a href="{{ url_for('sim.traders') }}">Traders</a>
         {% if current_user %}
           <a href="{{ url_for('sim.my_simulations') }}">Mes Trades</a>
@@ -60,6 +61,10 @@
   </footer>
 
   <nav class="bottom-nav" aria-label="Navigation principale">
+    <a href="{{ url_for('landing') }}" data-nav="home">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      <span>Accueil</span>
+    </a>
     <a href="{{ url_for('sim.traders') }}" data-nav="traders">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       <span>Traders</span>

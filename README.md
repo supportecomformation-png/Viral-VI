@@ -10,6 +10,7 @@ aucune transaction réelle n'est passée.
 
 ## Ce que fait l'app
 
+- **Accueil** (`/`) : solde fictif avec bouton « Déposer » (argent fictif stocké dans le navigateur, aucun paiement), meilleurs traders de la semaine, et liste des 250 premières cryptomonnaies avec prix en dollars, variation 24 h, favoris (étoile), recherche et filtres (Cryptomonnaies, Tendances, Plus échangés, Baisses), actualisée toutes les 30 s.
 - **Classement de traders** (7J / 30J, tri par PnL ou win rate) avec courbes de performance.
 - **Coller un wallet** (adresse Solana ou EVM `0x…`) : ouvre le profil du wallet et lance la simulation.
 - **Simulation de copie** : solde fictif (1 000 / 10 000 / 100 000 $), part du capital par trade
@@ -55,6 +56,7 @@ sim.py            pages (/traders, /trader/<wallet>, /app, /sim/<id>) + API /api
 db.py             accès PostgreSQL (psycopg 3)
 schema.sql        tables users + simulations
 onchain.py        fournisseur Moralis, swaps → trades, cache et quota
+markets.py        prix des cryptos (CoinGecko, repli CoinPaprika), cache 60 s, /api/markets
 static/js/engine.js   moteur de simulation (trades simulés ou réels), testable sous Node
 static/js/ui.js       formats, avatars, graphiques SVG
 static/js/app.js      logique des pages
