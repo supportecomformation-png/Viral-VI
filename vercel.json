@@ -21,6 +21,7 @@
       }
     }
   ],
+  "regions": ["fra1"],
   "routes": [
     { "src": "/(.*)", "dest": "api/index.py" }
   ]
