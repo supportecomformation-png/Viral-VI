@@ -101,9 +101,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 }
 .btn:active { transform: scale(0.98); }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
-.btn-primary { background: var(--grad); color: #04110b; box-shadow: var(--shadow-glow); }
+.btn-primary { background: #fff; color: #0a0c10; }
+.btn-primary:hover { background: #e9edf2; }
 .btn-ghost { background: transparent; color: var(--text); border-color: var(--border-strong); }
-.btn-ghost:hover { border-color: var(--up); color: var(--up); }
+.btn-ghost:hover { border-color: #fff; color: #fff; }
 .btn-danger { background: transparent; color: var(--down); border-color: rgba(255, 90, 110, 0.35); }
 .btn-danger:hover { background: rgba(255, 90, 110, 0.08); }
 .btn-block { width: 100%; }
@@ -489,7 +490,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
   padding: 11px 4px; border-radius: 999px; border: 1px solid var(--border-strong); background: transparent;
   color: var(--muted); font: 700 0.92rem 'Inter', sans-serif; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
-.quick-amounts button.active { color: var(--up); border-color: var(--up); background: rgba(34, 227, 154, 0.08); }
+.quick-amounts button.active { color: #fff; border-color: #fff; background: rgba(255, 255, 255, 0.08); }
 
 .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 6px 0 14px; }
 .keypad button {

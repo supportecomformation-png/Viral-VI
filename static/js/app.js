@@ -467,12 +467,7 @@
       const amount = amountValue();
       const valid = amount >= MIN_AMOUNT;
       startBtn.disabled = !(ready && valid);
-      if (!valid) {
-        startBtn.textContent = amount > 0 ? "Minimum 1 $" : "Entre un montant";
-      } else {
-        const label = formatAmount() + " $";
-        startBtn.textContent = loggedIn ? "Copier avec " + label : "Créer un compte et copier avec " + label;
-      }
+      startBtn.textContent = "Acheter";
       document.querySelectorAll("#quick-amounts button").forEach(function (b) {
         b.classList.toggle("active", parseFloat(b.getAttribute("data-amount")) === amount && !/[.]$/.test(raw));
       });
