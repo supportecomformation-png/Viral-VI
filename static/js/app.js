@@ -843,17 +843,18 @@
       }
     }
 
-    // ----- notifications push : une rafale d'achats / ventes envoyée d'un coup,
-    // comme une pile de notifications sur l'écran de verrouillage.
-    const BURST_SIZE = 8;
+    // ----- notifications push : un flux d'achats / ventes, une notification par seconde,
+    // qui remplit l'écran de verrouillage. Le serveur envoie ; la page peut être fermée.
+    const STREAM_COUNT = 20;  // nombre de notifications
+    const STREAM_GAP = 1;     // secondes entre deux notifications
+    const STREAM_LEAD = 4;    // délai avant la première : le temps de verrouiller le téléphone
 
     function notifEvents() {
       const res = E.evaluateSimulation(sim, sim.started_at + 400 * E.DAY); // jusqu'à la fin de l'horizon
       const trader = sim.handle || "Wallet " + E.shortAddress(sim.wallet);
       const now = nowSec() + offset;
-      return (res.feedAll || []).slice(0, BURST_SIZE).map(function (f, i) {
-        // Toutes à l'heure actuelle (décalées d'un millième de seconde pour garder l'ordre).
-        const at = now + i / 1000;
+      return (res.feedAll || []).slice(0, STREAM_COUNT).map(function (f, i) {
+        const at = now + STREAM_LEAD + i * STREAM_GAP;
         if (f.type === "open") {
           return { key: "o" + Math.round(f.time) + f.token, at: at, title: "Achat $" + f.token,
             body: trader + " · " + U.usd(f.size) + " investis" };
@@ -864,8 +865,8 @@
       });
     }
 
-    // Dépose la rafale puis demande l'envoi immédiat. Renvoie le nombre de notifications parties
-    // (0 si cette simulation a déjà reçu sa rafale : les clés d'événements évitent les doublons).
+    // Dépose le flux puis lance l'envoi côté serveur. Renvoie le nombre de notifications programmées
+    // (0 si cette simulation a déjà son flux : les clés d'événements évitent les doublons).
     function sendBurst() {
       if (!(sim.mode === "live" && sim.stopped_at == null)) return Promise.resolve(0);
       const events = notifEvents();
@@ -876,8 +877,19 @@
       }).then(function (data) {
         const queued = (data && data.queued) || 0;
         if (!queued) return 0;
-        return fetch("/api/push/dispatch", { method: "POST", credentials: "same-origin" })
-          .then(function () { return queued; }, function () { return queued; });
+        // On n'attend pas l'envoi : l'appel dure pendant le flux et le serveur passe le relais de lui-même
+        // (téléphone verrouillé). Tant que l'écran reste allumé, on relance toutes les 6 s en filet de sécurité :
+        // chaque notification est réservée avant l'envoi, donc jamais de doublon.
+        const kick = function () {
+          fetch("/api/push/dispatch", { method: "POST", credentials: "same-origin", keepalive: true }).catch(function () {});
+        };
+        kick();
+        let n = 0;
+        const iv = setInterval(function () {
+          if (++n > 5 || document.hidden) clearInterval(iv);
+          else kick();
+        }, 6000);
+        return queued;
       });
     }
 
@@ -900,8 +912,8 @@
         toggle.className = "btn btn-block " + (st === "on" ? "btn-ghost" : "btn-primary");
         if (st === "on") {
           help.textContent = count
-            ? count + " notifications envoyées d'un coup (achats et ventes copiés). Regarde ton écran de verrouillage."
-            : "Dès que tu lances une copie, tu reçois d'un coup une pile de notifications : achats et ventes du trader.";
+            ? count + " notifications arrivent, une par seconde (achats et ventes du trader). Verrouille ton téléphone et regarde l'écran."
+            : "Dès que tu lances une copie, tu reçois pendant 20 secondes une notification par seconde : achats et ventes du trader.";
         } else if (st === "install") {
           help.textContent = "Sur iPhone, ajoute d'abord Copy Trade à l'écran d'accueil (bouton Partager, puis « Sur l'écran d'accueil »), " +
             "ouvre l'app depuis son icône et reviens ici.";
@@ -910,7 +922,7 @@
         } else if (st === "unsupported") {
           help.textContent = "Ce navigateur ne permet pas les notifications.";
         } else {
-          help.textContent = "Reçois d'un coup une pile de notifications (achats et ventes du trader) dès que tu lances une copie.";
+          help.textContent = "Dès que tu lances une copie, reçois pendant 20 secondes une notification par seconde : achats et ventes du trader.";
         }
       }
 

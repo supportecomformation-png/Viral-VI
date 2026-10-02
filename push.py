@@ -21,6 +21,8 @@ Sans VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY, la fonctionnalité est désactivée
 import json
 import time
 
+import requests
+
 from flask import Blueprint, current_app, g, jsonify, request
 
 from auth_utils import login_required
@@ -32,8 +34,11 @@ MAX_EVENTS_PER_REQUEST = 40
 MAX_QUEUED_PER_SIM = 60
 MAX_SUBSCRIPTIONS_PER_USER = 10
 STALE_SECONDS = 300            # une notification en retard de plus de 5 min est abandonnée
-DISPATCH_BATCH = 25            # notifications traitées par appel
-DISPATCH_BUDGET_SECONDS = 7.0  # reste sous la limite d'exécution d'une fonction serverless
+DISPATCH_BATCH = 25            # lignes lues à chaque tour de boucle
+DISPATCH_BUDGET_SECONDS = 7.0  # reste sous la limite d'exécution d'une fonction serverless (10 s)
+MAX_WAIT_SECONDS = 15          # on attend une notification à venir seulement si elle est proche
+CONTINUE_HORIZON = 30          # s'il reste des notifications dans les 30 s, on passe le relais
+MAX_CHAIN = 6                  # nombre maximal de relais enchaînés (6 x 7 s = ~40 s)
 SEND_TIMEOUT = 5
 
 
@@ -228,47 +233,84 @@ def schedule_notifications(sim_id):
     return jsonify(queued=queued)
 
 
+def _spawn_continuation(chain):
+    """Relance l'envoi dans une nouvelle invocation, sans attendre sa réponse.
+
+    Une fonction serverless est limitée à ~10 s ; un flux de notifications dure
+    plus longtemps. Chaque appel passe donc le relais au suivant.
+    """
+    host = request.host
+    local = host.startswith(("localhost", "127.0.0.1"))
+    url = "%s://%s/api/push/dispatch?chain=%d" % ("http" if local else "https", host, chain)
+    try:
+        requests.get(url, timeout=(3, 0.3))  # la requête part ; on ne lit pas la réponse
+    except requests.exceptions.RequestException:
+        pass
+
+
 @bp.route("/api/push/dispatch", methods=["GET", "POST"])
 def dispatch():
-    """Envoie les notifications arrivées à échéance.
+    """Envoie les notifications arrivées à échéance, et attend les prochaines si elles sont proches.
 
     Public mais sans danger : il n'envoie que ce que les utilisateurs ont
     eux-mêmes programmé, chaque ligne est réservée avant l'envoi (pas de
-    doublon) et le travail par appel est borné.
+    doublon) et le travail par appel est borné (durée, nombre de relais).
     """
     if not _enabled():
         return jsonify(enabled=False, sent=0)
 
     started = time.time()
+    chain = request.args.get("chain", type=int) or 0
     execute(
         "UPDATE push_queue SET sent_at = ?, status = 'stale' WHERE sent_at IS NULL AND fire_at < ?",
         (started, started - STALE_SECONDS),
     )
-    due = query_all(
-        "SELECT * FROM push_queue WHERE sent_at IS NULL AND fire_at <= ? ORDER BY fire_at LIMIT ?",
-        (started, DISPATCH_BATCH),
-    )
-    sent = failed = skipped = 0
+    sent = failed = skipped = seen = 0
     subs_cache = {}
-    for row in due:
-        if time.time() - started > DISPATCH_BUDGET_SECONDS:
-            break
-        claimed = execute(
-            "UPDATE push_queue SET sent_at = ?, status = 'claimed' WHERE id = ? AND sent_at IS NULL",
-            (time.time(), row["id"]),
+    while time.time() - started < DISPATCH_BUDGET_SECONDS:
+        now = time.time()
+        due = query_all(
+            "SELECT * FROM push_queue WHERE sent_at IS NULL AND fire_at <= ? ORDER BY fire_at LIMIT ?",
+            (now, DISPATCH_BATCH),
         )
-        if not claimed:  # un autre appel l'a déjà réservée
-            skipped += 1
+        if not due:
+            nxt = query_one("SELECT MIN(fire_at) AS t FROM push_queue WHERE sent_at IS NULL AND fire_at > ?", (now,))
+            wait = (nxt["t"] - now) if nxt and nxt["t"] is not None else None
+            if wait is None or wait > MAX_WAIT_SECONDS:
+                break
+            # flux en cours : on patiente jusqu'à la prochaine notification (dans la limite du budget)
+            time.sleep(max(0.0, min(wait, started + DISPATCH_BUDGET_SECONDS - now)))
             continue
-        ok, ko = _deliver(
-            row["user_id"],
-            {"title": row["title"], "body": row["body"], "url": row["url"], "tag": "ev-%d" % row["id"]},
-            subs_cache,
+        for row in due:
+            if time.time() - started >= DISPATCH_BUDGET_SECONDS:
+                break
+            seen += 1
+            claimed = execute(
+                "UPDATE push_queue SET sent_at = ?, status = 'claimed' WHERE id = ? AND sent_at IS NULL",
+                (time.time(), row["id"]),
+            )
+            if not claimed:  # un autre appel l'a déjà réservée
+                skipped += 1
+                continue
+            ok, ko = _deliver(
+                row["user_id"],
+                {"title": row["title"], "body": row["body"], "url": row["url"], "tag": "ev-%d" % row["id"]},
+                subs_cache,
+            )
+            execute(
+                "UPDATE push_queue SET status = ? WHERE id = ?",
+                ("sent" if ok else ("failed" if ko else "nodevice"), row["id"]),
+            )
+            sent += ok
+            failed += ko
+
+    relayed = False
+    if chain < MAX_CHAIN:
+        left = query_one(
+            "SELECT COUNT(*) AS n FROM push_queue WHERE sent_at IS NULL AND fire_at <= ?",
+            (time.time() + CONTINUE_HORIZON,),
         )
-        execute(
-            "UPDATE push_queue SET status = ? WHERE id = ?",
-            ("sent" if ok else ("failed" if ko else "nodevice"), row["id"]),
-        )
-        sent += ok
-        failed += ko
-    return jsonify(enabled=True, due=len(due), sent=sent, failed=failed, skipped=skipped)
+        if left and left["n"]:
+            _spawn_continuation(chain + 1)
+            relayed = True
+    return jsonify(enabled=True, due=seen, sent=sent, failed=failed, skipped=skipped, relayed=relayed)

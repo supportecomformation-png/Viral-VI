@@ -44,12 +44,12 @@ Les 12 « traders vedettes » restent des adresses fictives au track record simu
 
 ## Notifications push
 
-Lancer une copie peut envoyer sur le téléphone une rafale de notifications (achats et ventes du trader copié), façon pile sur l'écran de verrouillage.
+Lancer une copie peut envoyer sur le téléphone un flux de notifications (achats et ventes du trader copié), une par seconde pendant 20 s, façon pile sur l'écran de verrouillage.
 
 1. Sur la page d'une simulation en direct, le bloc **Notifications** demande l'autorisation et abonne l'appareil (service worker `static/sw.js`, Web Push + VAPID).
-2. Quand la copie est lancée, le moteur JS calcule les 8 premiers trades de la simulation (achats et ventes) et les dépose tous à l'heure actuelle dans la table `push_queue` : une rafale, comme une pile de notifications sur l'écran de verrouillage.
-3. Le client appelle aussitôt `/api/push/dispatch`, qui envoie ce qui est dû. Aucun déclencheur externe (cron) n'est nécessaire. L'endpoint est idempotent : chaque ligne est réservée avant l'envoi, jamais de doublon, et une notification en retard de plus de 5 min est abandonnée.
-4. La rafale n'est envoyée qu'une fois par simulation. Arrêter ou supprimer la simulation supprime les notifications en attente.
+2. Quand la copie est lancée, le moteur JS calcule les 20 premiers trades de la simulation (achats et ventes) et les dépose dans la table `push_queue`, à raison d'un par seconde, après 4 s de délai (le temps de verrouiller le téléphone). Constantes `STREAM_COUNT`, `STREAM_GAP`, `STREAM_LEAD` dans `static/js/app.js`.
+3. `/api/push/dispatch` envoie chaque notification à son heure : il patiente jusqu'à la suivante (7 s au maximum par appel, la limite d'une fonction serverless est de 10 s) puis passe le relais à un nouvel appel de lui-même (6 relais au plus). Le téléphone peut donc être verrouillé et la page fermée. Tant que l'écran reste allumé, la page relance aussi l'envoi toutes les 6 s en filet de sécurité. Aucun déclencheur externe (cron) n'est nécessaire.
+4. L'endpoint est idempotent : chaque ligne est réservée avant l'envoi, jamais de doublon, et une notification en retard de plus de 5 min est abandonnée. Le flux n'est envoyé qu'une fois par simulation. Arrêter ou supprimer la simulation supprime les notifications en attente.
 
 Pour l'activer : définir `VAPID_PUBLIC_KEY` et `VAPID_PRIVATE_KEY` (variables d'environnement Vercel), puis redéployer. Sans elles, le bloc est masqué.
 **iPhone** : les notifications web ne fonctionnent qu'une fois le site ajouté à l'écran d'accueil (Partager → Sur l'écran d'accueil), puis ouvert depuis son icône (iOS 16.4 minimum).
