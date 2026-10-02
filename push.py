@@ -45,7 +45,7 @@ SEND_TIMEOUT = 5
 # « Mes ventes » : démonstration de notifications de vente, au nom du site.
 SALES_COUNT = 20          # notifications par lancement
 SALES_LEAD = 3            # secondes avant la première
-SALES_STORE = "Boutique démo"
+SALES_STORE = "MyKingdom (démo)"  # la mention « démo » doit rester : ce sont des notifications de démonstration
 SALES_FIRST_ORDER = 1001
 SALES_KEY_PATTERN = "sale:%"  # clés d'événements des notifications de vente
 # (montant, nombre d'articles) plausibles
