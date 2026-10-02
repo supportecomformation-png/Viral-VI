@@ -35,10 +35,10 @@ MAX_QUEUED_PER_SIM = 60
 MAX_SUBSCRIPTIONS_PER_USER = 10
 STALE_SECONDS = 300            # une notification en retard de plus de 5 min est abandonnée
 DISPATCH_BATCH = 25            # lignes lues à chaque tour de boucle
-DISPATCH_BUDGET_SECONDS = 7.0  # reste sous la limite d'exécution d'une fonction serverless (10 s)
+DISPATCH_BUDGET_SECONDS = 40.0  # un appel couvre tout un flux (mesuré : une fonction tient au moins 35 s)
 MAX_WAIT_SECONDS = 15          # on attend une notification à venir seulement si elle est proche
 CONTINUE_HORIZON = 30          # s'il reste des notifications dans les 30 s, on passe le relais
-MAX_CHAIN = 6                  # nombre maximal de relais enchaînés (6 x 7 s = ~40 s)
+MAX_CHAIN = 3                  # relais de secours si un appel atteint sa limite de durée
 SEND_TIMEOUT = 5
 
 

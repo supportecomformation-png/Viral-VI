@@ -18,6 +18,57 @@
     return chain === "solana" ? "Solana" : "EVM";
   }
 
+  // ----- notifications push : un flux d'achats / ventes, une notification par seconde, qui remplit
+  // l'écran de verrouillage. Le serveur envoie ; le téléphone peut être verrouillé, la page fermée.
+  const STREAM_COUNT = 20;  // nombre de notifications
+  const STREAM_GAP = 1;     // secondes entre deux notifications
+  const STREAM_LEAD = 4;    // délai avant la première
+
+  function streamEvents(sim, serverNow) {
+    const res = E.evaluateSimulation(sim, sim.started_at + 400 * E.DAY); // jusqu'à la fin de l'horizon
+    const trader = sim.handle || "Wallet " + E.shortAddress(sim.wallet);
+    return (res.feedAll || []).slice(0, STREAM_COUNT).map(function (f, i) {
+      const at = serverNow + STREAM_LEAD + i * STREAM_GAP;
+      if (f.type === "open") {
+        return { key: "o" + Math.round(f.time) + f.token, at: at, title: "Achat $" + f.token,
+          body: trader + " · " + U.usd(f.size) + " investis" };
+      }
+      return { key: "c" + Math.round(f.time) + f.token, at: at,
+        title: "Vente $" + f.token + " " + U.pct(f.pnlPct),
+        body: trader + " · " + U.usd(f.pnl, { sign: true }) };
+    });
+  }
+
+  // Lance (ou relance) l'envoi côté serveur. L'appel dure pendant tout le flux : on ne l'attend pas.
+  // keepalive : la requête part même si la page se ferme ; le serveur continue si le client se déconnecte.
+  function kickDispatch() {
+    fetch("/api/push/dispatch", { method: "POST", credentials: "same-origin", keepalive: true }).catch(function () {});
+  }
+
+  // Dépose le flux d'une simulation puis lance l'envoi. Renvoie le nombre de notifications programmées
+  // (0 si cette simulation a déjà son flux : les clés d'événements évitent les doublons).
+  function scheduleStream(sim, serverNow) {
+    if (!(sim.mode === "live" && sim.stopped_at == null)) return Promise.resolve(0);
+    const events = streamEvents(sim, serverNow);
+    if (!events.length) return Promise.resolve(0);
+    return api("/api/simulations/" + sim.id + "/notifications", {
+      method: "POST",
+      body: JSON.stringify({ events: events }),
+    }).then(function (data) {
+      const queued = (data && data.queued) || 0;
+      if (!queued) return 0;
+      kickDispatch();
+      // Filet de sécurité tant que l'écran reste allumé : chaque notification est réservée avant
+      // l'envoi, donc ces relances ne créent jamais de doublon.
+      let n = 0;
+      const iv = setInterval(function () {
+        if (++n > 5 || document.hidden) clearInterval(iv);
+        else kickDispatch();
+      }, 6000);
+      return queued;
+    });
+  }
+
   async function api(url, options) {
     const opts = Object.assign({ credentials: "same-origin", headers: {} }, options || {});
     if (opts.body && !opts.headers["Content-Type"]) opts.headers["Content-Type"] = "application/json";
@@ -656,6 +707,13 @@
           return body;
         });
         if (!data) return;
+        // Notifications : on programme le flux MAINTENANT, pendant l'animation. Si l'utilisateur verrouille son
+        // téléphone dès l'achat, la page de simulation n'aurait jamais eu le temps de le faire.
+        try {
+          if (window.CopyPush && (await window.CopyPush.state()) === "on") {
+            await scheduleStream(data.simulation, data.server_now);
+          }
+        } catch (e) { /* les notifications ne doivent jamais bloquer l'achat */ }
         // Laisse au moins un instant à l'animation "envoi" avant la validation.
         if (!reduceMotion) await wait(Math.max(0, 700 - (Date.now() - startedAt)));
         if (overlay.hidden) showOrder(amount);
@@ -843,56 +901,6 @@
       }
     }
 
-    // ----- notifications push : un flux d'achats / ventes, une notification par seconde,
-    // qui remplit l'écran de verrouillage. Le serveur envoie ; la page peut être fermée.
-    const STREAM_COUNT = 20;  // nombre de notifications
-    const STREAM_GAP = 1;     // secondes entre deux notifications
-    const STREAM_LEAD = 4;    // délai avant la première : le temps de verrouiller le téléphone
-
-    function notifEvents() {
-      const res = E.evaluateSimulation(sim, sim.started_at + 400 * E.DAY); // jusqu'à la fin de l'horizon
-      const trader = sim.handle || "Wallet " + E.shortAddress(sim.wallet);
-      const now = nowSec() + offset;
-      return (res.feedAll || []).slice(0, STREAM_COUNT).map(function (f, i) {
-        const at = now + STREAM_LEAD + i * STREAM_GAP;
-        if (f.type === "open") {
-          return { key: "o" + Math.round(f.time) + f.token, at: at, title: "Achat $" + f.token,
-            body: trader + " · " + U.usd(f.size) + " investis" };
-        }
-        return { key: "c" + Math.round(f.time) + f.token, at: at,
-          title: "Vente $" + f.token + " " + U.pct(f.pnlPct),
-          body: trader + " · " + U.usd(f.pnl, { sign: true }) };
-      });
-    }
-
-    // Dépose le flux puis lance l'envoi côté serveur. Renvoie le nombre de notifications programmées
-    // (0 si cette simulation a déjà son flux : les clés d'événements évitent les doublons).
-    function sendBurst() {
-      if (!(sim.mode === "live" && sim.stopped_at == null)) return Promise.resolve(0);
-      const events = notifEvents();
-      if (!events.length) return Promise.resolve(0);
-      return api("/api/simulations/" + id + "/notifications", {
-        method: "POST",
-        body: JSON.stringify({ events: events }),
-      }).then(function (data) {
-        const queued = (data && data.queued) || 0;
-        if (!queued) return 0;
-        // On n'attend pas l'envoi : l'appel dure pendant le flux et le serveur passe le relais de lui-même
-        // (téléphone verrouillé). Tant que l'écran reste allumé, on relance toutes les 6 s en filet de sécurité :
-        // chaque notification est réservée avant l'envoi, donc jamais de doublon.
-        const kick = function () {
-          fetch("/api/push/dispatch", { method: "POST", credentials: "same-origin", keepalive: true }).catch(function () {});
-        };
-        kick();
-        let n = 0;
-        const iv = setInterval(function () {
-          if (++n > 5 || document.hidden) clearInterval(iv);
-          else kick();
-        }, 6000);
-        return queued;
-      });
-    }
-
     function initNotifs() {
       const card = el("notif-card");
       const P = window.CopyPush;
@@ -938,7 +946,7 @@
           return;
         }
         P.enable().then(function () {
-          return sendBurst();
+          return scheduleStream(sim, nowSec() + offset);
         }).then(function (n) {
           render("on", n);
         }).catch(function (err) {
@@ -956,7 +964,7 @@
         card.hidden = false;
         return P.state().then(function (s) {
           render(s);
-          if (s === "on") return P.resync().then(sendBurst).then(function (n) { render("on", n); });
+          if (s === "on") return P.resync().then(function () { return scheduleStream(sim, nowSec() + offset); }).then(function (n) { render("on", n); });
         });
       }).catch(function () {});
     }
