@@ -29,6 +29,7 @@
         <a href="{{ url_for('sim.traders') }}">Traders</a>
         {% if current_user %}
           <a href="{{ url_for('sim.my_simulations') }}">Mes Trades</a>
+          <a href="{{ url_for('sim.my_sales') }}">Mes ventes</a>
           <a href="{{ url_for('auth.logout') }}" class="nav-muted">Déconnexion</a>
         {% else %}
           <a href="{{ url_for('auth.login') }}">Connexion</a>
@@ -78,6 +79,10 @@
     <a href="{{ url_for('sim.my_simulations') }}" data-nav="app">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-9M15 6h6v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Mes Trades</span>
+    </a>
+    <a href="{{ url_for('sim.my_sales') }}" data-nav="sales">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14l-1 16H6L5 4zM9 8a3 3 0 0 0 6 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Mes ventes</span>
     </a>
     {% if current_user %}
       <a href="{{ url_for('auth.logout') }}" data-nav="account">

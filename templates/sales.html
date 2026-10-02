@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Mes ventes — Copy Trade{% endblock %}
+{% block page %}sales{% endblock %}
+{% block content %}
+<section class="container page-head">
+  <h1>Mes ventes</h1>
+</section>
+
+<section class="container">
+  <div class="stat-row" id="sales-stats"></div>
+  <div class="card">
+    <h3>Ventes</h3>
+    <ul class="feed sales-feed" id="sales-list">
+      <li class="empty-note">Chargement…</li>
+    </ul>
+  </div>
+  <div class="center-cta">
+    <a href="{{ url_for('sim.traders') }}" class="btn btn-primary">Copier un nouveau wallet</a>
+  </div>
+</section>
+{% endblock %}

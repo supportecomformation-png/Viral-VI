@@ -337,7 +337,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
   .site-header { position: static; }
 
   .bottom-nav {
-    display: grid; grid-template-columns: repeat(4, 1fr);
+    display: grid; grid-template-columns: repeat(5, 1fr);
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
     padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
     background: rgba(11, 15, 20, 0.94); backdrop-filter: blur(14px); border-top: 1px solid var(--border);
@@ -551,3 +551,16 @@ body[data-page="trader"] button, body[data-page="trader"] a { touch-action: mani
 
 /* L attribut hidden doit toujours gagner sur display: inline-flex / grid des composants. */
 [hidden]{display:none !important}
+
+/* ---- Mes ventes ---- */
+.sales-feed li{align-items:center;justify-content:space-between;gap:14px}
+.sales-feed .sale-main{display:grid;min-width:0}
+.sales-feed .sale-main b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sales-feed .sale-main small{color:var(--faint)}
+.sales-feed .sale-amount{display:grid;justify-items:end;text-align:right;flex-shrink:0}
+.sales-feed .sale-amount small{font-weight:600}
+.sales-feed{max-height:none;overflow:visible;padding-right:0}
+.sales-feed .sale-main{color:var(--text)}
+.sales-feed .sale-main:hover{text-decoration:none}
+.sales-feed .sale-amount small.up{color:var(--up)}
+.sales-feed .sale-amount small.down{color:var(--down)}

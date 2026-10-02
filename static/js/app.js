@@ -91,7 +91,7 @@
 
   // ---------------------------------------------------------------- nav active
   (function markNav() {
-    const map = { home: "home", traders: "traders", trader: "traders", app: "app", sim: "app" };
+    const map = { home: "home", traders: "traders", trader: "traders", app: "app", sim: "app", sales: "sales" };
     const key = map[page];
     if (!key) return;
     const a = document.querySelector('.bottom-nav [data-nav="' + key + '"]');
@@ -793,6 +793,61 @@
     });
   }
 
+  // ---------------------------------------------------------------- mes ventes
+  // Une vente = un trade copié puis clôturé. On les regroupe sur toutes les simulations.
+  function initSales() {
+    const listEl = document.getElementById("sales-list");
+    const statsEl = document.getElementById("sales-stats");
+    let sims = [];
+    let offset = 0;
+
+    function render() {
+      const now = nowSec() + offset;
+      const sales = [];
+      let anyActive = false;
+      sims.forEach(function (s) {
+        const res = E.evaluateSimulation(s, now);
+        if (res.status === "active") anyActive = true;
+        const name = s.handle || "Wallet " + E.shortAddress(s.wallet);
+        res.closed.forEach(function (c) {
+          sales.push({ sim: s.id, trader: name, token: c.token, time: c.closeTime, proceeds: c.proceeds, pnl: c.pnl, pnlPct: c.pnlPct });
+        });
+      });
+      sales.sort(function (a, b) { return b.time - a.time; });
+
+      const proceeds = sales.reduce(function (t, x) { return t + x.proceeds; }, 0);
+      const pnl = sales.reduce(function (t, x) { return t + x.pnl; }, 0);
+      const wins = sales.filter(function (x) { return x.pnl > 0; }).length;
+      statsEl.innerHTML =
+        '<div class="stat"><small>Ventes</small><b>' + sales.length + "</b></div>" +
+        '<div class="stat"><small>Total encaissé</small><b>' + U.usd(proceeds) + "</b></div>" +
+        '<div class="stat"><small>Résultat réalisé</small><b class="' + U.cls(pnl) + '">' + U.usd(pnl, { sign: true }) + "</b></div>" +
+        '<div class="stat"><small>Win rate</small><b>' + (sales.length ? Math.round((wins / sales.length) * 100) + " %" : "—") + "</b></div>";
+
+      if (!sales.length) {
+        listEl.innerHTML = '<li class="empty-note">' + (sims.length
+          ? "Aucune vente pour l'instant : les trades copiés n'ont pas encore été clôturés."
+          : "Aucune vente pour l'instant. Copie un wallet pour commencer.") + "</li>";
+        return anyActive;
+      }
+      listEl.innerHTML = sales.slice(0, 200).map(function (x) {
+        return '<li><a class="sale-main" href="/sim/' + x.sim + '"><b>Vente $' + U.esc(x.token) + "</b><small>" +
+          U.esc(x.trader) + " · " + U.fmtSimTime(x.time) + "</small></a>" +
+          '<span class="sale-amount"><b>' + U.usd(x.proceeds) + '</b><small class="' + U.cls(x.pnl) + '">' +
+          U.pct(x.pnlPct) + " · " + U.usd(x.pnl, { sign: true }) + "</small></span></li>";
+      }).join("");
+      return anyActive;
+    }
+
+    api("/api/simulations").then(function (data) {
+      sims = data.simulations;
+      offset = data.server_now - nowSec();
+      if (render()) setInterval(render, 4000);
+    }).catch(function (err) {
+      if (err.message !== "auth_required") listEl.innerHTML = '<li class="empty-note">' + U.esc(err.message) + "</li>";
+    });
+  }
+
   // ---------------------------------------------------------------- suivi d'une simulation
   function initSim() {
     const root = document.getElementById("sim-root");
@@ -1006,4 +1061,5 @@
   else if (page === "trader") initTrader();
   else if (page === "app") initApp();
   else if (page === "sim") initSim();
+  else if (page === "sales") initSales();
 })();

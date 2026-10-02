@@ -160,6 +160,12 @@ def my_simulations():
     return render_template("app.html")
 
 
+@bp.route("/ventes")
+@login_required
+def my_sales():
+    return render_template("sales.html")
+
+
 @bp.route("/sim/<int:sim_id>")
 @login_required
 def simulation_page(sim_id):
