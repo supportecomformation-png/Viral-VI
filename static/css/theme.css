@@ -552,15 +552,8 @@ body[data-page="trader"] button, body[data-page="trader"] a { touch-action: mani
 /* L attribut hidden doit toujours gagner sur display: inline-flex / grid des composants. */
 [hidden]{display:none !important}
 
-/* ---- Mes ventes ---- */
-.sales-feed li{align-items:center;justify-content:space-between;gap:14px}
-.sales-feed .sale-main{display:grid;min-width:0}
-.sales-feed .sale-main b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sales-feed .sale-main small{color:var(--faint)}
-.sales-feed .sale-amount{display:grid;justify-items:end;text-align:right;flex-shrink:0}
-.sales-feed .sale-amount small{font-weight:600}
-.sales-feed{max-height:none;overflow:visible;padding-right:0}
-.sales-feed .sale-main{color:var(--text)}
-.sales-feed .sale-main:hover{text-decoration:none}
-.sales-feed .sale-amount small.up{color:var(--up)}
-.sales-feed .sale-amount small.down{color:var(--down)}
+/* ---- Mes ventes : un seul bouton ---- */
+.sales-launch{display:grid;justify-items:center;gap:14px;padding-top:36px;padding-bottom:60px}
+.sales-launch .btn{min-width:min(100%,320px)}
+.sales-launch .fine{margin:0;text-align:center;max-width:420px}
+.sales-launch .fine.error{color:var(--down)}

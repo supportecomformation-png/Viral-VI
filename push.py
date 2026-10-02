@@ -19,6 +19,7 @@ Sans VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY, la fonctionnalité est désactivée
 """
 
 import json
+import random
 import time
 
 import requests
@@ -40,6 +41,14 @@ MAX_WAIT_SECONDS = 15          # on attend une notification à venir seulement s
 CONTINUE_HORIZON = 30          # s'il reste des notifications dans les 30 s, on passe le relais
 MAX_CHAIN = 3                  # relais de secours si un appel atteint sa limite de durée
 SEND_TIMEOUT = 5
+
+# « Mes ventes » : démonstration de notifications de vente, au nom du site.
+SALES_COUNT = 20          # notifications par lancement
+SALES_LEAD = 3            # secondes avant la première
+SALES_STORE = "Boutique démo"
+SALES_FIRST_ORDER = 1001
+# (montant, nombre d'articles) plausibles
+SALES_BASKETS = ((29.99, 1), (39.99, 1), (59.98, 2), (77.97, 3), (79.98, 2), (89.97, 3), (119.97, 3))
 
 
 def _error(code, message, status):
@@ -246,6 +255,55 @@ def _spawn_continuation(chain):
         requests.get(url, timeout=(3, 0.3))  # la requête part ; on ne lit pas la réponse
     except requests.exceptions.RequestException:
         pass
+
+
+def _fr_amount(value):
+    return ("%.2f" % value).replace(".", ",") + " $"
+
+
+@bp.route("/api/sales-simulation", methods=["POST"])
+@login_required
+def sales_simulation():
+    """Programme une pile de notifications de vente, une par seconde, pour l'utilisateur connecté.
+
+    Le contenu est généré ici (rien n'est repris du client). Les notifications portent le
+    nom du site : titre « Vente #n », montant, nombre d'articles et nom de boutique de démo.
+    """
+    if not _enabled():
+        return _error("push_disabled", "Les notifications ne sont pas encore disponibles sur ce site.", 503)
+    uid = g.user["id"]
+    now = time.time()
+    if not query_all("SELECT id FROM push_subscriptions WHERE user_id = ? LIMIT 1", (uid,)):
+        return _error("no_device", "Active d'abord les notifications sur cet appareil.", 409)
+    running = query_one(
+        "SELECT COUNT(*) AS n FROM push_queue WHERE user_id = ? AND event_key LIKE 'sale:%' AND sent_at IS NULL AND fire_at > ?",
+        (uid, now - STALE_SECONDS),
+    )
+    if running and running["n"]:
+        return _error("already_running", "Une simulation est déjà en cours, patiente quelques secondes.", 429)
+    done = query_one("SELECT COUNT(*) AS n FROM push_queue WHERE user_id = ? AND event_key LIKE 'sale:%'", (uid,))
+    first = SALES_FIRST_ORDER + (int(done["n"]) if done else 0)
+
+    rng = random.Random()
+    queued = 0
+    for i in range(SALES_COUNT):
+        amount, items = rng.choice(SALES_BASKETS)
+        number = first + i
+        new_id = execute(
+            """INSERT INTO push_queue (user_id, sim_id, event_key, fire_at, title, body, url)
+               VALUES (?, NULL, ?, ?, ?, ?, ?)""",
+            (
+                uid,
+                "sale:%d:%d" % (int(now * 1000), number),
+                now + SALES_LEAD + i,
+                "Vente #%d" % number,
+                "%s, %d article%s · %s" % (_fr_amount(amount), items, "s" if items > 1 else "", SALES_STORE),
+                "/ventes",
+            ),
+        )
+        if new_id is not None:
+            queued += 1
+    return jsonify(queued=queued, first_in=SALES_LEAD, duration=SALES_COUNT)
 
 
 @bp.route("/api/push/dispatch", methods=["GET", "POST"])

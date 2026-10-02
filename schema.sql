@@ -81,7 +81,7 @@ CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(use
 CREATE TABLE IF NOT EXISTS push_queue (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    sim_id INTEGER NOT NULL REFERENCES simulations(id) ON DELETE CASCADE,
+    sim_id INTEGER REFERENCES simulations(id) ON DELETE CASCADE,  -- NULL : notification sans simulation (Mes ventes)
     event_key TEXT NOT NULL,
     fire_at DOUBLE PRECISION NOT NULL,
     title TEXT NOT NULL,
@@ -93,3 +93,6 @@ CREATE TABLE IF NOT EXISTS push_queue (
 );
 
 CREATE INDEX IF NOT EXISTS idx_push_queue_due ON push_queue(fire_at) WHERE sent_at IS NULL;
+
+-- Bases créées avant « Mes ventes » : sim_id devient facultatif (sans effet si déjà fait).
+ALTER TABLE push_queue ALTER COLUMN sim_id DROP NOT NULL;

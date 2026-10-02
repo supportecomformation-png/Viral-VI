@@ -51,6 +51,8 @@ Lancer une copie peut envoyer sur le téléphone un flux de notifications (achat
 3. `/api/push/dispatch` envoie chaque notification à son heure : il patiente jusqu'à la suivante (7 s au maximum par appel, la limite d'une fonction serverless est de 10 s) puis passe le relais à un nouvel appel de lui-même (6 relais au plus). Le téléphone peut donc être verrouillé et la page fermée. Tant que l'écran reste allumé, la page relance aussi l'envoi toutes les 6 s en filet de sécurité. Aucun déclencheur externe (cron) n'est nécessaire.
 4. L'endpoint est idempotent : chaque ligne est réservée avant l'envoi, jamais de doublon, et une notification en retard de plus de 5 min est abandonnée. Le flux n'est envoyé qu'une fois par simulation. Arrêter ou supprimer la simulation supprime les notifications en attente.
 
+**Mes ventes** (`/ventes`) : onglet à part du copy trading, avec un seul bouton « Lancer la simulation ». Il envoie sur le téléphone une pile de 20 notifications de vente, une par seconde (`POST /api/sales-simulation`, contenu généré côté serveur : « Vente #1001 », montant, nombre d'articles, « Boutique démo »). Elles portent le nom et le logo de Copy Trade. Constantes `SALES_*` dans `push.py`.
+
 Pour l'activer : définir `VAPID_PUBLIC_KEY` et `VAPID_PRIVATE_KEY` (variables d'environnement Vercel), puis redéployer. Sans elles, le bloc est masqué.
 **iPhone** : les notifications web ne fonctionnent qu'une fois le site ajouté à l'écran d'accueil (Partager → Sur l'écran d'accueil), puis ouvert depuis son icône (iOS 16.4 minimum).
 

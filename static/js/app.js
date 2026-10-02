@@ -45,6 +45,17 @@
     fetch("/api/push/dispatch", { method: "POST", credentials: "same-origin", keepalive: true }).catch(function () {});
   }
 
+  // Lance l'envoi puis le relance toutes les 6 s tant que l'écran reste allumé (filet de sécurité :
+  // chaque notification est réservée avant l'envoi, donc ces relances ne créent jamais de doublon).
+  function startDispatch() {
+    kickDispatch();
+    let n = 0;
+    const iv = setInterval(function () {
+      if (++n > 5 || document.hidden) clearInterval(iv);
+      else kickDispatch();
+    }, 6000);
+  }
+
   // Dépose le flux d'une simulation puis lance l'envoi. Renvoie le nombre de notifications programmées
   // (0 si cette simulation a déjà son flux : les clés d'événements évitent les doublons).
   function scheduleStream(sim, serverNow) {
@@ -57,14 +68,7 @@
     }).then(function (data) {
       const queued = (data && data.queued) || 0;
       if (!queued) return 0;
-      kickDispatch();
-      // Filet de sécurité tant que l'écran reste allumé : chaque notification est réservée avant
-      // l'envoi, donc ces relances ne créent jamais de doublon.
-      let n = 0;
-      const iv = setInterval(function () {
-        if (++n > 5 || document.hidden) clearInterval(iv);
-        else kickDispatch();
-      }, 6000);
+      startDispatch();
       return queued;
     });
   }
@@ -794,57 +798,40 @@
   }
 
   // ---------------------------------------------------------------- mes ventes
-  // Une vente = un trade copié puis clôturé. On les regroupe sur toutes les simulations.
+  // Un bouton : envoie sur le téléphone une pile de notifications de vente, une par seconde.
   function initSales() {
-    const listEl = document.getElementById("sales-list");
-    const statsEl = document.getElementById("sales-stats");
-    let sims = [];
-    let offset = 0;
+    const btn = document.getElementById("sales-launch");
+    const msg = document.getElementById("sales-msg");
+    const LABEL = btn.textContent;
 
-    function render() {
-      const now = nowSec() + offset;
-      const sales = [];
-      let anyActive = false;
-      sims.forEach(function (s) {
-        const res = E.evaluateSimulation(s, now);
-        if (res.status === "active") anyActive = true;
-        const name = s.handle || "Wallet " + E.shortAddress(s.wallet);
-        res.closed.forEach(function (c) {
-          sales.push({ sim: s.id, trader: name, token: c.token, time: c.closeTime, proceeds: c.proceeds, pnl: c.pnl, pnlPct: c.pnlPct });
-        });
-      });
-      sales.sort(function (a, b) { return b.time - a.time; });
-
-      const proceeds = sales.reduce(function (t, x) { return t + x.proceeds; }, 0);
-      const pnl = sales.reduce(function (t, x) { return t + x.pnl; }, 0);
-      const wins = sales.filter(function (x) { return x.pnl > 0; }).length;
-      statsEl.innerHTML =
-        '<div class="stat"><small>Ventes</small><b>' + sales.length + "</b></div>" +
-        '<div class="stat"><small>Total encaissé</small><b>' + U.usd(proceeds) + "</b></div>" +
-        '<div class="stat"><small>Résultat réalisé</small><b class="' + U.cls(pnl) + '">' + U.usd(pnl, { sign: true }) + "</b></div>" +
-        '<div class="stat"><small>Win rate</small><b>' + (sales.length ? Math.round((wins / sales.length) * 100) + " %" : "—") + "</b></div>";
-
-      if (!sales.length) {
-        listEl.innerHTML = '<li class="empty-note">' + (sims.length
-          ? "Aucune vente pour l'instant : les trades copiés n'ont pas encore été clôturés."
-          : "Aucune vente pour l'instant. Copie un wallet pour commencer.") + "</li>";
-        return anyActive;
-      }
-      listEl.innerHTML = sales.slice(0, 200).map(function (x) {
-        return '<li><a class="sale-main" href="/sim/' + x.sim + '"><b>Vente $' + U.esc(x.token) + "</b><small>" +
-          U.esc(x.trader) + " · " + U.fmtSimTime(x.time) + "</small></a>" +
-          '<span class="sale-amount"><b>' + U.usd(x.proceeds) + '</b><small class="' + U.cls(x.pnl) + '">' +
-          U.pct(x.pnlPct) + " · " + U.usd(x.pnl, { sign: true }) + "</small></span></li>";
-      }).join("");
-      return anyActive;
+    function say(text, isError) {
+      msg.textContent = text;
+      msg.className = "fine" + (isError ? " error" : "");
+      msg.hidden = !text;
     }
 
-    api("/api/simulations").then(function (data) {
-      sims = data.simulations;
-      offset = data.server_now - nowSec();
-      if (render()) setInterval(render, 4000);
-    }).catch(function (err) {
-      if (err.message !== "auth_required") listEl.innerHTML = '<li class="empty-note">' + U.esc(err.message) + "</li>";
+    btn.addEventListener("click", function () {
+      const P = window.CopyPush;
+      if (!P) return say("Notifications indisponibles sur ce navigateur.", true);
+      btn.disabled = true;
+      say("");
+      // ensure() doit être appelé directement dans le clic (demande d'autorisation).
+      P.ensure().then(function () {
+        return api("/api/sales-simulation", { method: "POST" });
+      }).then(function (data) {
+        startDispatch();
+        btn.textContent = "Simulation en cours…";
+        say("Verrouille ton téléphone : la première notification arrive dans " + data.first_in + " s.", false);
+        setTimeout(function () {
+          btn.disabled = false;
+          btn.textContent = LABEL;
+          say("");
+        }, (data.first_in + data.duration + 3) * 1000);
+      }).catch(function (err) {
+        if (err.message === "auth_required") return;
+        btn.disabled = false;
+        say(err.message || "Une erreur est survenue.", true);
+      });
     });
   }
 

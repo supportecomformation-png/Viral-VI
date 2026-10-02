@@ -6,16 +6,8 @@
   <h1>Mes ventes</h1>
 </section>
 
-<section class="container">
-  <div class="stat-row" id="sales-stats"></div>
-  <div class="card">
-    <h3>Ventes</h3>
-    <ul class="feed sales-feed" id="sales-list">
-      <li class="empty-note">Chargement…</li>
-    </ul>
-  </div>
-  <div class="center-cta">
-    <a href="{{ url_for('sim.traders') }}" class="btn btn-primary">Copier un nouveau wallet</a>
-  </div>
+<section class="container sales-launch">
+  <button type="button" class="btn btn-primary btn-lg" id="sales-launch">Lancer la simulation</button>
+  <p class="fine" id="sales-msg" role="status" aria-live="polite" hidden></p>
 </section>
 {% endblock %}

@@ -100,10 +100,24 @@
     return post("/api/push/test");
   }
 
+  // Garantit un appareil abonné. À appeler directement depuis un clic : si l'autorisation n'a pas
+  // encore été demandée, requestPermission() part dans le geste (indispensable sur iPhone).
+  function ensure() {
+    if (isIOS && !standalone) {
+      return Promise.reject(new Error("Sur iPhone, ajoute d'abord Copy Trade à l'écran d'accueil (Partager, puis « Sur l'écran d'accueil »), puis ouvre l'app depuis son icône."));
+    }
+    if (!pushSupported) return Promise.reject(new Error("Ce navigateur ne permet pas les notifications."));
+    if (Notification.permission === "denied") {
+      return Promise.reject(new Error("Les notifications sont bloquées pour ce site : autorise-les dans les réglages."));
+    }
+    if (Notification.permission === "default") return enable();
+    return currentSubscription().then(function (sub) { return sub ? resync() : enable(); });
+  }
+
   window.addEventListener("load", register);
 
   window.CopyPush = {
-    state: state, enable: enable, disable: disable, resync: resync, test: test, config: config,
+    state: state, enable: enable, ensure: ensure, disable: disable, resync: resync, test: test, config: config,
     isIOS: isIOS, standalone: standalone,
   };
 })();
