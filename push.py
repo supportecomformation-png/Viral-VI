@@ -47,6 +47,7 @@ SALES_COUNT = 20          # notifications par lancement
 SALES_LEAD = 3            # secondes avant la première
 SALES_STORE = "Boutique démo"
 SALES_FIRST_ORDER = 1001
+SALES_KEY_PATTERN = "sale:%"  # clés d'événements des notifications de vente
 # (montant, nombre d'articles) plausibles
 SALES_BASKETS = ((29.99, 1), (39.99, 1), (59.98, 2), (77.97, 3), (79.98, 2), (89.97, 3), (119.97, 3))
 
@@ -275,13 +276,15 @@ def sales_simulation():
     now = time.time()
     if not query_all("SELECT id FROM push_subscriptions WHERE user_id = ? LIMIT 1", (uid,)):
         return _error("no_device", "Active d'abord les notifications sur cet appareil.", 409)
+    # Le motif LIKE est passé en paramètre : un « % » écrit dans la requête serait pris pour un
+    # paramètre par psycopg (la base SQLite des tests, elle, ne s'en plaindrait pas).
     running = query_one(
-        "SELECT COUNT(*) AS n FROM push_queue WHERE user_id = ? AND event_key LIKE 'sale:%' AND sent_at IS NULL AND fire_at > ?",
-        (uid, now - STALE_SECONDS),
+        "SELECT COUNT(*) AS n FROM push_queue WHERE user_id = ? AND event_key LIKE ? AND sent_at IS NULL AND fire_at > ?",
+        (uid, SALES_KEY_PATTERN, now - STALE_SECONDS),
     )
     if running and running["n"]:
         return _error("already_running", "Une simulation est déjà en cours, patiente quelques secondes.", 429)
-    done = query_one("SELECT COUNT(*) AS n FROM push_queue WHERE user_id = ? AND event_key LIKE 'sale:%'", (uid,))
+    done = query_one("SELECT COUNT(*) AS n FROM push_queue WHERE user_id = ? AND event_key LIKE ?", (uid, SALES_KEY_PATTERN))
     first = SALES_FIRST_ORDER + (int(done["n"]) if done else 0)
 
     rng = random.Random()
