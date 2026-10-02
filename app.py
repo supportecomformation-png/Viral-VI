@@ -82,6 +82,26 @@ def create_app(config_class=Config):
         resp.headers["Cache-Control"] = "public, max-age=3600"
         return resp
 
+    # --- MESURE TEMPORAIRE (à retirer) : comportement des fonctions Vercel ---
+    @app.route("/api/_probe")
+    def _probe():
+        import time
+        from db import execute
+        mark = (request.args.get("mark") or "x")[:20]
+        wait = min(float(request.args.get("sleep") or 0), 40.0)
+        time.sleep(wait)
+        execute(
+            "INSERT INTO market_cache (key, payload, fetched_at) VALUES (?, ?, ?) "
+            "ON CONFLICT (key) DO UPDATE SET payload = EXCLUDED.payload, fetched_at = EXCLUDED.fetched_at",
+            ("probe:" + mark, "done", time.time()),
+        )
+        return jsonify(done=True, slept=wait)
+
+    @app.route("/api/_probe_read")
+    def _probe_read():
+        row = query_one("SELECT payload, fetched_at FROM market_cache WHERE key = ?", ("probe:" + (request.args.get("mark") or "x")[:20],))
+        return jsonify(row=row)
+
     @app.route("/healthz")
     def healthz():
         """Sonde de santé : renvoie 200 si la base répond, 503 sinon."""
