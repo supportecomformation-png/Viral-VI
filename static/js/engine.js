@@ -306,6 +306,7 @@
       open: open,
       closed: closed,
       feed: feed.slice(-40).reverse(),
+      feedAll: feed,
       curve: curve,
       tradesCount: closed.length,
       winRate: closed.length ? wins / closed.length : null,

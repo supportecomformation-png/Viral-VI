@@ -6,3 +6,4 @@ requests==2.33.1
 
 # Base de données PostgreSQL (Neon / Vercel Postgres).
 psycopg[binary]==3.2.3
+pywebpush==2.5.0

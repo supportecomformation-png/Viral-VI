@@ -206,4 +206,17 @@ test("évaluation on-chain : backtest instantané, insensible à l'horloge", () 
   assert.strictEqual(a.tradesCount, 3);
 });
 
+test("feedAll : tous les événements, chronologiques, plus que le fil d'activité (40)", () => {
+  const sim = { wallet: EVM, mode: "live", source: "simulated", balance: 10000, alloc_pct: 0.1, speed: 6000, started_at: NOW, stopped_at: null };
+  const res = E.evaluateSimulation(sim, NOW + 400 * DAY); // jusqu'à la fin de l'horizon
+  assert.strictEqual(res.status, "finished");
+  assert.ok(res.feedAll.length > 40, "feedAll doit dépasser les 40 entrées du fil : " + res.feedAll.length);
+  assert.strictEqual(res.feed.length, 40);
+  for (let i = 1; i < res.feedAll.length; i++) assert.ok(res.feedAll[i].time >= res.feedAll[i - 1].time, "ordre chronologique");
+  // le temps simulé se convertit en heure réelle dans la durée totale de la simulation (90 j / vitesse)
+  const last = res.feedAll[res.feedAll.length - 1];
+  const realAt = sim.started_at + (last.time - res.startSim) / sim.speed;
+  assert.ok(realAt > sim.started_at && realAt <= sim.started_at + (90 * DAY) / sim.speed + 1);
+});
+
 console.log(passed + " tests OK");

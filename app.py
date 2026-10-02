@@ -2,7 +2,7 @@ import hashlib
 import os
 from datetime import date
 
-from flask import Flask, render_template, g, jsonify, request, url_for
+from flask import Flask, render_template, g, jsonify, request, send_from_directory, url_for
 
 from config import Config
 from db import init_db, query_one
@@ -16,10 +16,12 @@ def create_app(config_class=Config):
     from auth import bp as auth_bp
     from sim import bp as sim_bp, DEMO_TRADERS
     from markets import bp as markets_bp
+    from push import bp as push_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(sim_bp)
     app.register_blueprint(markets_bp)
+    app.register_blueprint(push_bp)
 
     init_db(app)
 
@@ -65,6 +67,20 @@ def create_app(config_class=Config):
     @app.route("/")
     def landing():
         return render_template("home.html", traders=DEMO_TRADERS)
+
+    @app.route("/sw.js")
+    def service_worker():
+        # Doit être servi à la racine pour contrôler tout le site ; jamais mis en cache.
+        resp = send_from_directory(app.static_folder, "sw.js", mimetype="application/javascript")
+        resp.headers["Cache-Control"] = "no-cache"
+        resp.headers["Service-Worker-Allowed"] = "/"
+        return resp
+
+    @app.route("/manifest.webmanifest")
+    def manifest():
+        resp = send_from_directory(app.static_folder, "manifest.webmanifest", mimetype="application/manifest+json")
+        resp.headers["Cache-Control"] = "public, max-age=3600"
+        return resp
 
     @app.route("/healthz")
     def healthz():

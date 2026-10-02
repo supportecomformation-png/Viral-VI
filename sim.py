@@ -319,6 +319,8 @@ def stop_simulation(sim_id):
            WHERE id = ? AND user_id = ? AND mode = 'live' AND stopped_at IS NULL""",
         (time.time(), sim_id, g.user["id"]),
     )
+    # Simulation arrêtée : on annule les notifications qui n'étaient pas encore parties.
+    execute("DELETE FROM push_queue WHERE sim_id = ? AND sent_at IS NULL", (sim_id,))
     return jsonify(simulation=_serialize(_owned_simulation(sim_id)), server_now=time.time())
 
 

@@ -843,6 +843,111 @@
       }
     }
 
+    // ----- notifications push : un message par trade copié (achat / vente)
+    const MAX_NOTIFS = 30;
+    // Le temps est accéléré : sans espacement, les 30 premiers trades tomberaient en ~35 s.
+    // Une notification au plus toutes les 45 s réelles => elles couvrent toute la simulation.
+    const NOTIF_MIN_GAP = 45;
+
+    function notifEvents() {
+      const res = E.evaluateSimulation(sim, sim.started_at + 400 * E.DAY); // jusqu'à la fin de l'horizon
+      const trader = sim.handle || "Wallet " + E.shortAddress(sim.wallet);
+      const now = nowSec() + offset;
+      const out = [];
+      let lastAt = -Infinity;
+      (res.feedAll || []).forEach(function (f) {
+        const at = sim.started_at + (f.time - res.startSim) / sim.speed; // temps simulé -> heure réelle
+        if (at < now - 60 || at - lastAt < NOTIF_MIN_GAP) return;
+        lastAt = at;
+        if (f.type === "open") {
+          out.push({ key: "o" + Math.round(f.time) + f.token, at: at, title: "Achat $" + f.token,
+            body: trader + " · " + U.usd(f.size) + " investis" });
+        } else {
+          out.push({ key: "c" + Math.round(f.time) + f.token, at: at,
+            title: "Vente $" + f.token + " " + U.pct(f.pnlPct),
+            body: trader + " · " + U.usd(f.pnl, { sign: true }) });
+        }
+      });
+      return out.slice(0, MAX_NOTIFS);
+    }
+
+    function scheduleNotifs() {
+      if (!(sim.mode === "live" && sim.stopped_at == null)) return Promise.resolve(0);
+      const events = notifEvents();
+      if (!events.length) return Promise.resolve(0);
+      return api("/api/simulations/" + id + "/notifications", {
+        method: "POST",
+        body: JSON.stringify({ events: events }),
+      }).then(function () { return events.length; });
+    }
+
+    function initNotifs() {
+      const card = el("notif-card");
+      const P = window.CopyPush;
+      if (!card || !P || !(sim.mode === "live" && sim.stopped_at == null)) return;
+      const toggle = el("notif-toggle"), testBtn = el("notif-test"), badge = el("notif-status");
+      const help = el("notif-help"), errBox = el("notif-error");
+      let st = "off";
+
+      function render(next, count) {
+        st = next;
+        errBox.hidden = true;
+        toggle.hidden = !(st === "off" || st === "on");
+        testBtn.hidden = st !== "on";
+        badge.textContent = st === "on" ? "Activées" : "Désactivées";
+        badge.className = "badge " + (st === "on" ? "badge-live" : "badge-muted");
+        toggle.textContent = st === "on" ? "Désactiver les notifications" : "Activer les notifications";
+        toggle.className = "btn btn-block " + (st === "on" ? "btn-ghost" : "btn-primary");
+        if (st === "on") {
+          help.textContent = "Une notification arrive à chaque trade copié, même quand le site est fermé" +
+            (count ? " (" + count + " programmées)." : ".");
+        } else if (st === "install") {
+          help.textContent = "Sur iPhone, ajoute d'abord Copy Trade à l'écran d'accueil (bouton Partager, puis « Sur l'écran d'accueil »), " +
+            "ouvre l'app depuis son icône et reviens ici.";
+        } else if (st === "denied") {
+          help.textContent = "Les notifications sont bloquées pour ce site : autorise-les dans les réglages du navigateur.";
+        } else if (st === "unsupported") {
+          help.textContent = "Ce navigateur ne permet pas les notifications.";
+        } else {
+          help.textContent = "Reçois une notification à chaque trade copié, même quand le site est fermé.";
+        }
+      }
+
+      function fail(err) {
+        errBox.textContent = err.message || "Une erreur est survenue.";
+        errBox.hidden = false;
+      }
+
+      toggle.addEventListener("click", function () {
+        toggle.disabled = true;
+        if (st === "on") {
+          P.disable().then(function () { render("off"); }).catch(fail).then(function () { toggle.disabled = false; });
+          return;
+        }
+        P.enable().then(function () {
+          return scheduleNotifs();
+        }).then(function (n) {
+          render("on", n);
+        }).catch(function (err) {
+          P.state().then(function (s) { render(s); fail(err); });
+        }).then(function () { toggle.disabled = false; });
+      });
+
+      testBtn.addEventListener("click", function () {
+        testBtn.disabled = true;
+        P.test().then(function () { errBox.hidden = true; }).catch(fail).then(function () { testBtn.disabled = false; });
+      });
+
+      P.config().then(function (cfg) {
+        if (!cfg.enabled) return;
+        card.hidden = false;
+        return P.state().then(function (s) {
+          render(s);
+          if (s === "on") return P.resync().then(scheduleNotifs).then(function (n) { render("on", n); });
+        });
+      }).catch(function () {});
+    }
+
     let boot = null;
     try { boot = JSON.parse(el("sim-boot").textContent); } catch (e) {}
     (boot ? Promise.resolve(boot) : api("/api/simulations/" + id)).then(function (data) {
@@ -852,6 +957,7 @@
       if (sim.mode === "live" && sim.stopped_at == null) {
         timer = setInterval(draw, 1500);
       }
+      initNotifs();
     }).catch(function (err) {
       if (err.message !== "auth_required") el("sim-name").textContent = err.message;
     });
@@ -859,6 +965,7 @@
     el("btn-stop").addEventListener("click", function () {
       api("/api/simulations/" + id + "/stop", { method: "POST" }).then(function (data) {
         setSim(data);
+        el("notif-card").hidden = true;
         draw();
       });
     });

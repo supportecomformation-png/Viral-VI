@@ -43,6 +43,13 @@
   </div>
 
   <aside class="card sim-side">
+    <div class="notif-block" id="notif-card" hidden>
+      <div class="notif-head"><h3>Notifications</h3><span class="badge badge-muted" id="notif-status"></span></div>
+      <p class="fine" id="notif-help"></p>
+      <button type="button" class="btn btn-primary btn-block" id="notif-toggle">Activer les notifications</button>
+      <button type="button" class="btn btn-ghost btn-block btn-sm" id="notif-test" hidden>Envoyer une notification test</button>
+      <p class="form-error" id="notif-error" hidden></p>
+    </div>
     <h3>Réglages</h3>
     <dl class="kv" id="sim-params"></dl>
     <div class="side-actions">

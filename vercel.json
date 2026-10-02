@@ -16,7 +16,8 @@
           "auth_utils.py",
           "sim.py",
           "onchain.py",
-          "markets.py"
+          "markets.py",
+          "push.py"
         ]
       }
     }

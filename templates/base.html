@@ -3,7 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="{% block viewport %}width=device-width, initial-scale=1, viewport-fit=cover{% endblock %}">
-  <meta name="theme-color" content="#07090c">
+  <meta name="theme-color" content="#000000">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Copy Trade">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <title>{% block title %}Copy Trade — Copy trading démo{% endblock %}</title>
   <meta name="description" content="Apprends le copy trading sans risque : colle l'adresse d'un wallet et lance une simulation avec de l'argent fictif.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -88,6 +94,7 @@
 
   <script src="{{ asset('js/engine.js') }}"></script>
   <script src="{{ asset('js/ui.js') }}"></script>
+  <script src="{{ asset('js/push.js') }}"></script>
   {% block extra_scripts %}{% endblock %}
   <script src="{{ asset('js/app.js') }}"></script>
 </body>

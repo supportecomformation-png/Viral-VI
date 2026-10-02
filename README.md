@@ -42,6 +42,18 @@ par ROI réalisé.
 
 Les 12 « traders vedettes » restent des adresses fictives au track record simulé.
 
+## Notifications push
+
+Chaque trade copié (achat ou vente) peut envoyer une notification sur l'écran de verrouillage, même site fermé.
+
+1. Sur la page d'une simulation en direct, le bloc **Notifications** demande l'autorisation et abonne l'appareil (service worker `static/sw.js`, Web Push + VAPID).
+2. Le moteur JS calcule les événements à venir de la simulation (au plus 30, espacés d'au moins 45 s réelles pour couvrir toute la durée) et les dépose dans la table `push_queue`.
+3. `/api/push/dispatch` envoie ce qui est arrivé à échéance. Il est appelé toutes les ~5 min par `.github/workflows/push-dispatch.yml`. L'endpoint est idempotent : chaque ligne est réservée avant l'envoi, jamais de doublon, et une notification en retard de plus de 6 h est abandonnée.
+4. Arrêter ou supprimer la simulation supprime les notifications en attente.
+
+Pour l'activer : définir `VAPID_PUBLIC_KEY` et `VAPID_PRIVATE_KEY` (variables d'environnement Vercel), puis redéployer. Sans elles, le bloc est masqué.
+**iPhone** : les notifications web ne fonctionnent qu'une fois le site ajouté à l'écran d'accueil (Partager → Sur l'écran d'accueil), puis ouvert depuis son icône (iOS 16.4 minimum).
+
 ## Architecture
 
 ```
@@ -53,6 +65,7 @@ db.py             accès PostgreSQL (psycopg 3)
 schema.sql        tables users + simulations
 onchain.py        fournisseur Moralis, swaps → trades, cache et quota
 markets.py        prix des cryptos (CoinGecko, repli CoinPaprika), cache 60 s, /api/markets
+push.py           notifications push (abonnements, file d'attente, envoi VAPID), /api/push/*
 static/js/engine.js   moteur de simulation (trades simulés ou réels), testable sous Node
 static/js/ui.js       formats, avatars, graphiques SVG
 static/js/app.js      logique des pages

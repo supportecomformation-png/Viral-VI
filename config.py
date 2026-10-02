@@ -54,3 +54,8 @@ class Config:
     ONCHAIN_CACHE_TTL_SECONDS = int(os.environ.get("ONCHAIN_CACHE_TTL_SECONDS", "1200"))
     # Garde-fou de quota : nombre maximal de wallets interrogés par 24 h.
     ONCHAIN_MAX_FETCHES_PER_DAY = int(os.environ.get("ONCHAIN_MAX_FETCHES_PER_DAY", "250"))
+
+    # Notifications push (Web Push / VAPID). Sans les deux clés : désactivées.
+    VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "").strip()
+    VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "").strip()
+    VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT", "https://viral-vi-drab.vercel.app").strip()
