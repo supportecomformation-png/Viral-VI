@@ -843,42 +843,42 @@
       }
     }
 
-    // ----- notifications push : un message par trade copié (achat / vente)
-    const MAX_NOTIFS = 30;
-    // Le temps est accéléré : sans espacement, les 30 premiers trades tomberaient en ~35 s.
-    // Une notification au plus toutes les 45 s réelles => elles couvrent toute la simulation.
-    const NOTIF_MIN_GAP = 45;
+    // ----- notifications push : une rafale d'achats / ventes envoyée d'un coup,
+    // comme une pile de notifications sur l'écran de verrouillage.
+    const BURST_SIZE = 8;
 
     function notifEvents() {
       const res = E.evaluateSimulation(sim, sim.started_at + 400 * E.DAY); // jusqu'à la fin de l'horizon
       const trader = sim.handle || "Wallet " + E.shortAddress(sim.wallet);
       const now = nowSec() + offset;
-      const out = [];
-      let lastAt = -Infinity;
-      (res.feedAll || []).forEach(function (f) {
-        const at = sim.started_at + (f.time - res.startSim) / sim.speed; // temps simulé -> heure réelle
-        if (at < now - 60 || at - lastAt < NOTIF_MIN_GAP) return;
-        lastAt = at;
+      return (res.feedAll || []).slice(0, BURST_SIZE).map(function (f, i) {
+        // Toutes à l'heure actuelle (décalées d'un millième de seconde pour garder l'ordre).
+        const at = now + i / 1000;
         if (f.type === "open") {
-          out.push({ key: "o" + Math.round(f.time) + f.token, at: at, title: "Achat $" + f.token,
-            body: trader + " · " + U.usd(f.size) + " investis" });
-        } else {
-          out.push({ key: "c" + Math.round(f.time) + f.token, at: at,
-            title: "Vente $" + f.token + " " + U.pct(f.pnlPct),
-            body: trader + " · " + U.usd(f.pnl, { sign: true }) });
+          return { key: "o" + Math.round(f.time) + f.token, at: at, title: "Achat $" + f.token,
+            body: trader + " · " + U.usd(f.size) + " investis" };
         }
+        return { key: "c" + Math.round(f.time) + f.token, at: at,
+          title: "Vente $" + f.token + " " + U.pct(f.pnlPct),
+          body: trader + " · " + U.usd(f.pnl, { sign: true }) };
       });
-      return out.slice(0, MAX_NOTIFS);
     }
 
-    function scheduleNotifs() {
+    // Dépose la rafale puis demande l'envoi immédiat. Renvoie le nombre de notifications parties
+    // (0 si cette simulation a déjà reçu sa rafale : les clés d'événements évitent les doublons).
+    function sendBurst() {
       if (!(sim.mode === "live" && sim.stopped_at == null)) return Promise.resolve(0);
       const events = notifEvents();
       if (!events.length) return Promise.resolve(0);
       return api("/api/simulations/" + id + "/notifications", {
         method: "POST",
         body: JSON.stringify({ events: events }),
-      }).then(function () { return events.length; });
+      }).then(function (data) {
+        const queued = (data && data.queued) || 0;
+        if (!queued) return 0;
+        return fetch("/api/push/dispatch", { method: "POST", credentials: "same-origin" })
+          .then(function () { return queued; }, function () { return queued; });
+      });
     }
 
     function initNotifs() {
@@ -899,8 +899,9 @@
         toggle.textContent = st === "on" ? "Désactiver les notifications" : "Activer les notifications";
         toggle.className = "btn btn-block " + (st === "on" ? "btn-ghost" : "btn-primary");
         if (st === "on") {
-          help.textContent = "Une notification arrive à chaque trade copié, même quand le site est fermé" +
-            (count ? " (" + count + " programmées)." : ".");
+          help.textContent = count
+            ? count + " notifications envoyées d'un coup (achats et ventes copiés). Regarde ton écran de verrouillage."
+            : "Dès que tu lances une copie, tu reçois d'un coup une pile de notifications : achats et ventes du trader.";
         } else if (st === "install") {
           help.textContent = "Sur iPhone, ajoute d'abord Copy Trade à l'écran d'accueil (bouton Partager, puis « Sur l'écran d'accueil »), " +
             "ouvre l'app depuis son icône et reviens ici.";
@@ -909,7 +910,7 @@
         } else if (st === "unsupported") {
           help.textContent = "Ce navigateur ne permet pas les notifications.";
         } else {
-          help.textContent = "Reçois une notification à chaque trade copié, même quand le site est fermé.";
+          help.textContent = "Reçois d'un coup une pile de notifications (achats et ventes du trader) dès que tu lances une copie.";
         }
       }
 
@@ -925,7 +926,7 @@
           return;
         }
         P.enable().then(function () {
-          return scheduleNotifs();
+          return sendBurst();
         }).then(function (n) {
           render("on", n);
         }).catch(function (err) {
@@ -943,7 +944,7 @@
         card.hidden = false;
         return P.state().then(function (s) {
           render(s);
-          if (s === "on") return P.resync().then(scheduleNotifs).then(function (n) { render("on", n); });
+          if (s === "on") return P.resync().then(sendBurst).then(function (n) { render("on", n); });
         });
       }).catch(function () {});
     }

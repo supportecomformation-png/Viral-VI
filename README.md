@@ -44,12 +44,12 @@ Les 12 « traders vedettes » restent des adresses fictives au track record simu
 
 ## Notifications push
 
-Chaque trade copié (achat ou vente) peut envoyer une notification sur l'écran de verrouillage, même site fermé.
+Lancer une copie peut envoyer sur le téléphone une rafale de notifications (achats et ventes du trader copié), façon pile sur l'écran de verrouillage.
 
 1. Sur la page d'une simulation en direct, le bloc **Notifications** demande l'autorisation et abonne l'appareil (service worker `static/sw.js`, Web Push + VAPID).
-2. Le moteur JS calcule les événements à venir de la simulation (au plus 30, espacés d'au moins 45 s réelles pour couvrir toute la durée) et les dépose dans la table `push_queue`.
-3. `/api/push/dispatch` envoie ce qui est arrivé à échéance. Il est appelé toutes les ~5 min par `.github/workflows/push-dispatch.yml`. L'endpoint est idempotent : chaque ligne est réservée avant l'envoi, jamais de doublon, et une notification en retard de plus de 6 h est abandonnée.
-4. Arrêter ou supprimer la simulation supprime les notifications en attente.
+2. Quand la copie est lancée, le moteur JS calcule les 8 premiers trades de la simulation (achats et ventes) et les dépose tous à l'heure actuelle dans la table `push_queue` : une rafale, comme une pile de notifications sur l'écran de verrouillage.
+3. Le client appelle aussitôt `/api/push/dispatch`, qui envoie ce qui est dû. Aucun déclencheur externe (cron) n'est nécessaire. L'endpoint est idempotent : chaque ligne est réservée avant l'envoi, jamais de doublon, et une notification en retard de plus de 5 min est abandonnée.
+4. La rafale n'est envoyée qu'une fois par simulation. Arrêter ou supprimer la simulation supprime les notifications en attente.
 
 Pour l'activer : définir `VAPID_PUBLIC_KEY` et `VAPID_PRIVATE_KEY` (variables d'environnement Vercel), puis redéployer. Sans elles, le bloc est masqué.
 **iPhone** : les notifications web ne fonctionnent qu'une fois le site ajouté à l'écran d'accueil (Partager → Sur l'écran d'accueil), puis ouvert depuis son icône (iOS 16.4 minimum).

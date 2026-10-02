@@ -6,12 +6,13 @@ l'écran de verrouillage du téléphone, même quand le site est fermé.
 
 Fonctionnement :
   1. Le navigateur s'abonne (service worker + PushManager) → `/api/push/subscribe`.
-  2. Le client calcule les événements à venir d'une simulation (moteur JS
-     déterministe) et les dépose dans `push_queue` → `/api/simulations/<id>/notifications`.
-  3. `/api/push/dispatch` envoie ce qui est arrivé à échéance. Il est appelé
-     régulièrement par un déclencheur externe (GitHub Actions, voir
-     .github/workflows/push-dispatch.yml). L'endpoint est idempotent : chaque
-     notification est « réservée » avant l'envoi, donc jamais envoyée deux fois.
+  2. Quand une copie est lancée, le client calcule les premiers trades de la
+     simulation (moteur JS déterministe) et les dépose dans `push_queue` →
+     `/api/simulations/<id>/notifications`, tous à l'heure actuelle : c'est une
+     rafale, comme une pile de notifications sur l'écran de verrouillage.
+  3. Le client appelle aussitôt `/api/push/dispatch`, qui envoie ce qui est dû.
+     Aucun déclencheur externe n'est nécessaire. L'endpoint est idempotent :
+     chaque notification est « réservée » avant l'envoi, donc jamais envoyée deux fois.
 
 Sans VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY, la fonctionnalité est désactivée
 (l'interface masque simplement le bloc de notifications).
@@ -30,7 +31,7 @@ bp = Blueprint("push", __name__)
 MAX_EVENTS_PER_REQUEST = 40
 MAX_QUEUED_PER_SIM = 60
 MAX_SUBSCRIPTIONS_PER_USER = 10
-STALE_SECONDS = 6 * 3600       # une notification en retard de plus de 6 h est abandonnée
+STALE_SECONDS = 300            # une notification en retard de plus de 5 min est abandonnée
 DISPATCH_BATCH = 25            # notifications traitées par appel
 DISPATCH_BUDGET_SECONDS = 7.0  # reste sous la limite d'exécution d'une fonction serverless
 SEND_TIMEOUT = 5
