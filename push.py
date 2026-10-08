@@ -19,6 +19,7 @@ Sans VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY, la fonctionnalité est désactivée
 """
 
 import json
+import math
 import random
 import time
 
@@ -43,8 +44,10 @@ MAX_CHAIN = 3                  # relais de secours si un appel atteint sa limite
 SEND_TIMEOUT = 5
 
 # « Mes ventes » : démonstration de notifications de vente, au nom du site.
-SALES_COUNT = 60          # notifications par lancement (une par seconde : ~63 s ; reste sous DISPATCH_BUDGET_SECONDS)
+SALES_COUNT = 60          # notifications par lancement
+SALES_GAP = 0.25          # secondes entre deux notifications (en dessous, c'est la vitesse d'envoi vers Apple/Google qui limite)
 SALES_LEAD = 3            # secondes avant la première
+# La pile entière (SALES_LEAD + SALES_COUNT * SALES_GAP) doit tenir dans DISPATCH_BUDGET_SECONDS.
 SALES_STORE = "MyKingdom (aperçu)"  # la mention entre parenthèses doit rester : ce sont des notifications de démonstration
 SALES_FIRST_ORDER = 1001
 SALES_KEY_PATTERN = "sale:%"  # clés d'événements des notifications de vente
@@ -67,6 +70,18 @@ def _clip(value, limit):
 
 # ------------------------------------------------------------------ envoi
 
+_session = None
+
+
+def _http_session():
+    """Une seule connexion réutilisée pour tous les envois : évite de refaire la poignée de main TLS
+    à chaque notification, ce qui compte quand on en envoie plusieurs par seconde."""
+    global _session
+    if _session is None:
+        _session = requests.Session()
+    return _session
+
+
 class SubscriptionGone(Exception):
     """Le service push a répondu 404/410 : l'abonnement n'existe plus."""
 
@@ -87,6 +102,7 @@ def _send_one(sub, payload):
             vapid_claims={"sub": cfg["VAPID_SUBJECT"]},  # copie neuve : pywebpush la modifie
             ttl=3600,
             timeout=SEND_TIMEOUT,
+            requests_session=_http_session(),
         )
     except WebPushException as exc:
         status = getattr(getattr(exc, "response", None), "status_code", None)
@@ -298,7 +314,7 @@ def sales_simulation():
             (
                 uid,
                 "sale:%d:%d" % (int(now * 1000), number),
-                now + SALES_LEAD + i,
+                now + SALES_LEAD + i * SALES_GAP,
                 "Vente #%d" % number,
                 "%s, %d article%s · %s" % (_fr_amount(amount), items, "s" if items > 1 else "", SALES_STORE),
                 "/ventes",
@@ -306,7 +322,7 @@ def sales_simulation():
         )
         if new_id is not None:
             queued += 1
-    return jsonify(queued=queued, first_in=SALES_LEAD, duration=SALES_COUNT)
+    return jsonify(queued=queued, first_in=SALES_LEAD, duration=int(math.ceil(SALES_COUNT * SALES_GAP)))
 
 
 @bp.route("/api/push/dispatch", methods=["GET", "POST"])
