@@ -36,14 +36,14 @@ MAX_QUEUED_PER_SIM = 60
 MAX_SUBSCRIPTIONS_PER_USER = 10
 STALE_SECONDS = 300            # une notification en retard de plus de 5 min est abandonnée
 DISPATCH_BATCH = 25            # lignes lues à chaque tour de boucle
-DISPATCH_BUDGET_SECONDS = 40.0  # un appel couvre tout un flux (mesuré : une fonction tient au moins 35 s)
+DISPATCH_BUDGET_SECONDS = 90.0  # un appel couvre tout un flux (mesuré en ligne : une fonction tient au moins 100 s)
 MAX_WAIT_SECONDS = 15          # on attend une notification à venir seulement si elle est proche
 CONTINUE_HORIZON = 30          # s'il reste des notifications dans les 30 s, on passe le relais
 MAX_CHAIN = 3                  # relais de secours si un appel atteint sa limite de durée
 SEND_TIMEOUT = 5
 
 # « Mes ventes » : démonstration de notifications de vente, au nom du site.
-SALES_COUNT = 20          # notifications par lancement
+SALES_COUNT = 60          # notifications par lancement (une par seconde : ~63 s ; reste sous DISPATCH_BUDGET_SECONDS)
 SALES_LEAD = 3            # secondes avant la première
 SALES_STORE = "MyKingdom (aperçu)"  # la mention entre parenthèses doit rester : ce sont des notifications de démonstration
 SALES_FIRST_ORDER = 1001
